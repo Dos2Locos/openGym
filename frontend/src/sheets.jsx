@@ -2,7 +2,8 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, byCategory, smOf, searchExercises, similarExercises, exOr, isAssisted, betterWeight, beatsWeight, isCustomEx } from './lib/exercises.js'
-import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile, profileEquipment, ACC_V } from './lib/equipment.js'
+import { activeProfile, exAvailable, newProfile, profileEquipment, ACC_V, eqLabel, equipmentList, chipEquipment, isAddedEq } from './lib/equipment.js'
+import { useInstanceEquipment } from './lib/instance-equipment.js'
 import { fmtDate, fmtDateRange, fmtNum, fmtPlate, exerciseNameText, fmtVol, fmtDur, durPart, todayISO, isoOf, uid, exCount, routineCount, setsWorkCount, DAYN, DAYS, weekOrder, weekStartOf, weekDayOffset, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, bestWeightForEntry, buildSets, effectiveRoutineIds, workoutDay, workoutVolume, setsDone, setsDoneActive, setUnitsTotal, lastBW, sessionSections, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, EFFORT, capEffort, stepEffort, isBw, isPerSide, sideReps, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
 import { usesBar, defaultBarWeight, hasBarOverride, isNoBar } from './lib/bar.js'
@@ -961,7 +962,7 @@ export function detailTags(ex) {
   add(t(ex.bp), { acc: true })
   if (ex.bp === 'cardio') add(t(MUSCLE_NAME['cardiovascular system']), { icon: 'figureStrength' })
   else for (const s of (ex.primaries?.length ? ex.primaries : (ex.tg ? [ex.tg] : [])).filter(trainedBy(ex))) add(t(MUSCLE_NAME[s] || s), { icon: 'figureStrength' })
-  add(t(ex.eq), { icon: 'kettlebell' })
+  add(eqLabel(ex.eq), { icon: 'kettlebell' })
   let helpers = 0
   for (const s of (ex.secondaries?.length ? ex.secondaries : smOf(ex)).filter(trainedBy(ex))) {
     if (helpers >= 3) break
@@ -1120,7 +1121,14 @@ function CustomExForm({ existing, prefill, onDone, close }) {
   const [n, setN] = useState(existing ? existing.n : (prefill || ''))
   const [bp, setBp] = useState(existing ? existing.bp : '')
   const [eq, setEq] = useState(existing ? (existing.eq || '') : '')
-  const storedEq = existing && typeof existing.eq === 'string' && existing.eq && !ALL_EQUIPMENT.includes(existing.eq) ? existing.eq : null
+  // The instance's list, narrowed to the active profile while the filter is on — plus body weight
+  // and whatever is picked, so an exercise edited with kit the profile lacks still saves.
+  const st = useStore(s => s.S)
+  const inst = useInstanceEquipment(s => s.inst)
+  const [allEq, setAllEq] = useState(false)
+  const eqList = equipmentList(inst)
+  const eqChips = chipEquipment(eqList, activeProfile(st), { showAll: allEq, keep: eq, inst })
+  const storedEq = existing && typeof existing.eq === 'string' && existing.eq && !eqList.includes(existing.eq) ? existing.eq : null
   const [desc, setDesc] = useState(existing ? (existing.desc || '') : '')
   const [media, setMedia] = useState(() => mediaOf(existing))
   // Whether this form changed the media at all. An edit that did not touch it writes back what the
@@ -1210,10 +1218,12 @@ function CustomExForm({ existing, prefill, onDone, close }) {
       {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => setBp(b)}>{t(b)}</button>)}
     </div>
     <div className="chips" style={{ margin: '12px 0' }}>
-      {ALL_EQUIPMENT.map(k => (<button key={k} className={'chip' + (eq === k ? ' on' : '')} onClick={() => setEq(k)}>{t(k)}</button>))}
+      {eqChips.map(k => (<button key={k} className={'chip' + (eq === k ? ' on' : '')} onClick={() => setEq(k)}>{eqLabel(k)}</button>))}
       {/* An imported exercise can carry equipment the list does not have (`custom` from a CSV or
-          Hevy import). It stays a chip of its own, picked, so Save does not stop on "Pick equipment". */}
-      {storedEq && <button key={storedEq} className={'chip' + (eq === storedEq ? ' on' : '')} onClick={() => setEq(storedEq)}>{t(storedEq)}</button>}
+          Hevy import, a type the admin has since deleted). It stays a chip of its own, picked, so
+          Save does not stop on "Pick equipment". */}
+      {storedEq && <button key={storedEq} className={'chip' + (eq === storedEq ? ' on' : '')} onClick={() => setEq(storedEq)}>{eqLabel(storedEq)}</button>}
+      {eqChips.length < eqList.length && <button className="chip" onClick={() => setAllEq(true)}>{t('Show all equipment')}</button>}
     </div>
     {bp && <>
       {bp !== 'cardio' && <MultiSelectRow title={t('Primary muscle groups')} sheetTitle={t('Primary muscle groups')}
@@ -1275,6 +1285,7 @@ function usageMap(st) {
 const SAME = '≈'
 function ExercisePicker({ onPick, title, close, like }) {
   const st = useStore(s => s.S)
+  useInstanceEquipment(s => s.inst)   // repaint when the instance's list changes
   const usage = usageMap(st)
   const [q, setQ] = useState('')
   // What a swap is away from: the picker opens on what trains the same muscle, if anything you
@@ -1331,7 +1342,7 @@ function ExercisePicker({ onPick, title, close, like }) {
     ? similarExercises((profile && !showAll ? all.filter(e => exAvailable(st, e)) : all).filter(e => bp === SAME || !bp || e.bp === bp), q, f, f.length ? 12 : 30)
     : []
   const pickRow = e => <div key={e.id} className="item" {...tappable(() => onPick(e))}>
-        <Thumb ex={e} /><div className="grow"><div className={`tt ${exerciseNameClass(e)}`}>{isFav(st, e.id) && <Icon name="starFill" className="fav-star" />}{exerciseNameFor(e)}</div><div className="ss capitalize">{t(MUSCLE_NAME[e.tg] || e.tg || e.bp)} · {t(e.eq)}</div></div>
+        <Thumb ex={e} /><div className="grow"><div className={`tt ${exerciseNameClass(e)}`}>{isFav(st, e.id) && <Icon name="starFill" className="fav-star" />}{exerciseNameFor(e)}</div><div className="ss capitalize">{t(MUSCLE_NAME[e.tg] || e.tg || e.bp)} · {eqLabel(e.eq)}</div></div>
         {/* Accent tag = already in a routine/log ("Chosen"); the yellow star by the name = favourite. */}
         {usage[e.id] && <span className="tag acc"><Icon name="starFill" /></span>}
         {/* A "+" glyph reads as "add this now" — it used to just open the same detail sheet as
@@ -1384,7 +1395,7 @@ function ExercisePicker({ onPick, title, close, like }) {
     </div>}
     {eqOpts.length > 1 && <div className="chips" ref={eqStrip} style={{ marginBottom: 10 }}>
       <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(50) }}>{t('Any equipment')}</button>
-      {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(50) }}>{t(x)}</button>)}
+      {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(50) }}>{eqLabel(x)}</button>)}
     </div>}
     <div className={'list' + (st.exerciseView === 'cards' ? ' ex-grid' : '')}>
       {!special && <div className="item ex-new" {...tappable(() => customExSheet(null, ex => onPick(ex), q.trim()))}>
@@ -1490,14 +1501,20 @@ export function swapActiveWorkoutExercise(index) {
 function EquipmentProfileSheet({ profile, close }) {
   const update = useStore(s => s.update)
   const nameRef = useRef(null)
-  const [checked, setChecked] = useState(new Set(profile ? profileEquipment(profile) : []))
+  // Always the whole list, filter or not: this is where a newly added type gets ticked.
+  const inst = useInstanceEquipment(s => s.inst)
+  const list = equipmentList(inst)
+  const [checked, setChecked] = useState(new Set(profile ? profileEquipment(profile, inst) : []))
   const toggle = k => setChecked(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n })
   const save = () => {
     const name = (nameRef.current.value || '').trim()
     if (!name) { return }
     update(s => {
       s.equipProfiles = s.equipProfiles || []
-      const equipment = [...checked]
+      // An added type this list does not show (deleted, or not loaded yet) is kept as it was: it
+      // filters nothing, and is back if the type is.
+      const kept = (profile?.equipment || []).filter(k => isAddedEq(k) && !list.includes(k))
+      const equipment = [...checked, ...kept]
       if (profile) {
         const p = s.equipProfiles.find(x => x.id === profile.id)
         if (p) { p.name = name; p.equipment = equipment; p.accV = ACC_V }
@@ -1517,8 +1534,8 @@ function EquipmentProfileSheet({ profile, close }) {
     <TextField ref={nameRef} defaultValue={profile?.name || ''} placeholder={t('Profile name')} maxLength={40} />
     <div style={{ height: 12 }} />
     <div className="chips">
-      {ALL_EQUIPMENT.map(k => (
-        <button key={k} className={'chip' + (checked.has(k) ? ' on' : '')} onClick={() => toggle(k)}>{t(k)}</button>
+      {list.map(k => (
+        <button key={k} className={'chip' + (checked.has(k) ? ' on' : '')} onClick={() => toggle(k)}>{eqLabel(k)}</button>
       ))}
     </div>
     <div className="dim small" style={{ marginTop: 10 }}>
@@ -1770,7 +1787,7 @@ function ExConfig({ ex, existing, onSave, onDelete, onReplace, close, routine, i
         turns into a translatable label. */}
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '10px 0 14px' }}>
       {cardio && <span className="tag acc"><Icon name="figureRun" />{t('Cardio')}</span>}
-      <span className="tag">{t(MUSCLE_NAME[ex.tg] || ex.tg || ex.bp)}</span><span className="tag">{t(ex.eq)}</span>
+      <span className="tag">{t(MUSCLE_NAME[ex.tg] || ex.tg || ex.bp)}</span><span className="tag">{eqLabel(ex.eq)}</span>
       {!cardio && (ex.secondaries?.length ? ex.secondaries : smOf(ex)).filter(trainedBy(ex)).slice(0, 3)
         .map((s, i) => <span key={i} className="tag dim">{t(MUSCLE_NAME[s] || s)}</span>)}
     </div>

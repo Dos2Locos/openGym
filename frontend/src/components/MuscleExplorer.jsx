@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { BODYPARTS, allExercises, equipmentOf, searchExercises } from '../lib/exercises.js'
-import { activeProfile, exAvailable } from '../lib/equipment.js'
+import { activeProfile, exAvailable, eqLabel } from '../lib/equipment.js'
+import { useInstanceEquipment } from '../lib/instance-equipment.js'
 import { bestWeightFor } from '../lib/history.js'
 import { fmtNum, exCount } from '../lib/format.js'
 import { MUSCLES, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
@@ -19,6 +20,7 @@ import { isFav, sortFavouritesFirst } from '../lib/favourites.js'
 // a result into a selection; without it the explorer behaves like the normal Library.
 export default function MuscleExplorer({ onPick, onDetail, onPlan }) {
   const S = useStore(s => s.S)
+  const inst = useInstanceEquipment(s => s.inst)   // the instance's needs filter too
   const [selected, setSelected] = useState(null)
   const [q, setQ] = useState('')
   const [bp, setBp] = useState('')
@@ -32,7 +34,7 @@ export default function MuscleExplorer({ onPick, onDetail, onPlan }) {
   const catalog = useMemo(() => {
     const all = allExercises(S)
     return (profile && !showAll) ? all.filter(e => exAvailable(S, e)) : all
-  }, [S.customEx, S.equipFilterOn, S.activeEquipId, S.equipProfiles, showAll])
+  }, [S.customEx, S.equipFilterOn, S.activeEquipId, S.equipProfiles, showAll, inst])
   const counts = useMemo(() => Object.fromEntries(MUSCLES.map(m => [m,
     catalog.filter(e => musclesOf(e)[m]).length
   ])), [catalog])
@@ -87,7 +89,7 @@ export default function MuscleExplorer({ onPick, onDetail, onPlan }) {
       </div>
       {eqOpts.length > 1 && <div className="chips" style={{ marginBottom: 12 }}>
         <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(40) }}>{t('Any equipment')}</button>
-        {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(40) }}>{t(x)}</button>)}
+        {eqOpts.map(x => <button key={x} className={'chip' + (eqOn === x ? ' on' : '')} onClick={() => { setEq(x); setShown(40) }}>{eqLabel(x)}</button>)}
       </div>}
       <div className={'list' + (S.exerciseView === 'cards' ? ' ex-grid' : '')}>
         {exercises.slice(0, shown).map(e => {
@@ -95,7 +97,7 @@ export default function MuscleExplorer({ onPick, onDetail, onPlan }) {
           const primary = musclesOf(e)[selected] === 1
           return <div key={e.id} className="item" {...tappable(() => choose(e))}>
             <Thumb ex={e} />
-            <div className="grow"><div className={`tt ${exerciseNameClass(e)}`}>{isFav(S, e.id) && <Icon name="starFill" className="fav-star" />}{exerciseNameFor(e)}</div><div className="ss">{t(primary ? 'Primary target' : 'Also trains')} · <span className="capitalize">{t(MUSCLE_NAME[e.tg] || e.tg || e.bp)} · {t(e.eq)}</span></div></div>
+            <div className="grow"><div className={`tt ${exerciseNameClass(e)}`}>{isFav(S, e.id) && <Icon name="starFill" className="fav-star" />}{exerciseNameFor(e)}</div><div className="ss">{t(primary ? 'Primary target' : 'Also trains')} · <span className="capitalize">{t(MUSCLE_NAME[e.tg] || e.tg || e.bp)} · {eqLabel(e.eq)}</span></div></div>
             {onPick ? <Icon name="plus" className="chev" /> : <>
               {best > 0 && <span className="tag acc">{fmtNum(best)}</span>}
               <Button size="sm" variant="tinted" icon="plus" onClick={ev => { ev.stopPropagation(); onPlan(e) }}>{t('Plan')}</Button>

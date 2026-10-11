@@ -10,6 +10,8 @@ import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import AdminCoach from './AdminCoach.jsx'
+import { EquipmentManager, english } from '../components/EquipmentTypes.jsx'
+import { refreshInstanceEquipment } from '../lib/instance-equipment.js'
 import '../admin.css'
 
 // Admin-only operator dashboard (owner passkey + admin flag; guarded again server-side).
@@ -192,6 +194,75 @@ function InvitesCard({ invites, reload, inviteOnly }) {
   </div>
 }
 
+// Equipment types this instance adds to the catalogue (api/equipment.js): the list everyone's
+// profiles and custom exercises pick from, what catalogue exercises need besides their own
+// equipment, and what users have asked to have added.
+const post = (path, body) => api(path, { method: 'POST', body: JSON.stringify(body) })
+const codeOf = e => (e?.status === 409 ? 'exists' : e?.status === 400 ? 'name' : 'other')
+
+function EquipmentCard() {
+  const toast = useUI(s => s.toast)
+  const [data, setData] = useState(null)
+  const [approving, setApproving] = useState(null)   // { id, name } while the name is checked
+  const load = () => api('/api/admin/equipment').then(setData).catch(e => toast(e.message))
+  useEffect(() => { load() }, [])
+  // Every change reloads the card, and this admin's own app takes the new list at once.
+  const done = () => { load(); refreshInstanceEquipment(() => api('/api/equipment'), { force: true }) }
+  const save = p => p.then(() => { done(); return null }, e => codeOf(e))
+  const ops = {
+    add: name => save(post('/api/admin/equipment/types', { name })),
+    rename: (id, name) => save(post('/api/admin/equipment/types', { id, name })),
+    remove: id => save(post('/api/admin/equipment/types/delete', { id })),
+    setNames: (id, names) => save(post('/api/admin/equipment/types', { id, name: data.types.find(x => x.id === id)?.name, names })),
+    setNeeds: (exId, types) => save(post('/api/admin/equipment/needs', { exId, types })),
+  }
+  const resolve = body => post('/api/admin/equipment/proposals/resolve', body)
+    .then(() => { setApproving(null); done() })
+    .catch(e => toast(e.status === 409 ? 'That equipment type already exists. Merge it instead, or pick another name.' : e.message))
+  const merge = (p, typeId) => typeId && resolve({ id: p.id, action: 'merge', typeId })
+  if (!data) return null
+  const pending = data.proposals.filter(p => p.status === 'pending')
+  const answered = data.proposals.filter(p => p.status !== 'pending').slice(0, 10)
+  return <div className="card">
+    <h2 style={{ margin: 0 }}>Equipment</h2>
+    <div className="adm-lead">
+      Equipment the catalogue doesn’t have. Everyone on this instance can tick these in their equipment profiles and
+      pick them for their own exercises. Names are shown as you write them, in every language.
+    </div>
+    {pending.length > 0 && <>
+      <div className="adm-group-t">Proposals waiting · {pending.length}</div>
+      {pending.map(p => <div key={p.id} style={{ padding: '8px 0', borderBottom: 'var(--hair) solid var(--sep)' }}>
+        <div className="tt">{p.name}</div>
+        <div className="ss dim">{(p.author || 'a deleted user') + ' · ' + rel(p.at)}{p.note ? ' · “' + p.note + '”' : ''}</div>
+        {approving?.id === p.id
+          ? <div className="row" style={{ gap: 6, marginTop: 6 }}>
+              <input className="input" maxLength={40} value={approving.name} onChange={e => setApproving({ ...approving, name: e.target.value })} />
+              <Button size="sm" variant="primary" onClick={() => resolve({ id: p.id, action: 'approve', name: approving.name.trim() })}>Add</Button>
+              <Button size="sm" onClick={() => setApproving(null)}>Cancel</Button>
+            </div>
+          : <div className="row" style={{ gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+              <Button size="sm" variant="tinted" onClick={() => setApproving({ id: p.id, name: p.name })}>Approve</Button>
+              <Button size="sm" onClick={() => resolve({ id: p.id, action: 'reject' })}>Reject</Button>
+              {data.types.length > 0 && <select className="input" style={{ width: 'auto' }} value="" aria-label="Merge into"
+                onChange={e => merge(p, e.target.value)}>
+                <option value="">Merge into…</option>
+                {data.types.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+              </select>}
+            </div>}
+      </div>)}
+      <div style={{ height: 12 }} />
+    </>}
+    <EquipmentManager inst={data} ops={ops} tr={english} />
+    {answered.length > 0 && <>
+      <div className="adm-group-t" style={{ marginTop: 14 }}>Answered proposals</div>
+      {answered.map(p => <div key={p.id} className="row between dim" style={{ padding: '4px 0', fontSize: '.82rem' }}>
+        <span>{p.name} · {p.author || 'a deleted user'}</span>
+        <span>{p.status === 'rejected' ? 'rejected' : p.typeName && p.typeName !== p.name ? '→ ' + p.typeName : 'added'}</span>
+      </div>)}
+    </>}
+  </div>
+}
+
 // Who signed in, who tried and failed, what an admin changed. A card rather than its own route:
 // the dashboard is deliberately one page of cards, and the 95 % use of this is a glance at the
 // last twenty events. Paging follows Library.jsx's house style — "Show more", not page numbers.
@@ -322,6 +393,8 @@ export default function Admin() {
     <AdminCoach />
 
     <InvitesCard invites={invites} reload={loadInvites} inviteOnly={inviteOnly} />
+
+    <EquipmentCard />
 
     <div className="card">
       <h2 style={{ margin: 0 }}>Users</h2>

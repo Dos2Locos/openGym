@@ -16,7 +16,9 @@ import { useWakeLock } from './lib/wakelock.js'
 import { installViewportGuard } from './lib/viewport-guard.js'
 import { installChipDrag } from './lib/hchips.js'
 import { syncPushSubscription } from './lib/push.js'
-import { MOBILE } from './lib/mobile.js'
+import { MOBILE, onAppActive, readJsonFile, writeJsonFile } from './lib/mobile.js'
+import { api } from './lib/api.js'
+import { refreshInstanceEquipment, restoreInstanceFiles, setInstanceMirror, showLocalInstance, showServerInstance } from './lib/instance-equipment.js'
 import { exitWorkoutEdit, startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
@@ -64,6 +66,14 @@ function applyPrefs(theme, accent) {
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
   if (MOBILE) setSystemBarsLight(de.dataset.theme === 'light')
+}
+
+const fetchEquipment = () => api('/api/equipment')
+// The phone keeps both lists in its own files too, and asks again when the app comes back.
+if (MOBILE) {
+  setInstanceMirror(writeJsonFile)
+  restoreInstanceFiles(readJsonFile)
+  onAppActive(() => { if (useStore.getState().user) refreshInstanceEquipment(fetchEquipment) })
 }
 
 function Shell() {
@@ -132,6 +142,22 @@ function Shell() {
   useEffect(() => {
     if (MOBILE || !user || !ready) return
     syncPushSubscription().catch(() => {})
+  }, [user?.id, ready])
+  // The instance's equipment list follows the session (lib/instance-equipment.js): the server's
+  // for an account — fetched now, and again whenever the app comes back — and the device's own
+  // for a guest or a phone without a server. Offline, the last list received stands.
+  useEffect(() => {
+    if (!ready) return
+    if (!user) { showLocalInstance(); return }
+    showServerInstance()
+    refreshInstanceEquipment(fetchEquipment, { force: true })
+    const onBack = () => { if (document.visibilityState === 'visible') refreshInstanceEquipment(fetchEquipment) }
+    document.addEventListener('visibilitychange', onBack)
+    window.addEventListener('online', onBack)
+    return () => {
+      document.removeEventListener('visibilitychange', onBack)
+      window.removeEventListener('online', onBack)
+    }
   }, [user?.id, ready])
   // Opened from a device-link QR code (#95): once boot knows who is here, the sheet that redeems
   // it opens by itself — over the sign-in screen, or over the app for a guest or a signed-in

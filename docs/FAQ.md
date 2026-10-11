@@ -81,6 +81,13 @@ Yes. Everyone creates their own profile and sees only their own data. You can ma
 invite-only and give yourself an admin dashboard; see
 [multiple users](SELF_HOSTING.md#4-multiple-users).
 
+### The equipment I train with isn't on the list. Can I add it?
+
+On a server, ask your admin: **Settings → Equipment → Propose equipment** sends it to them, and
+they can also say which catalogue exercises need it. Without a server, add it yourself under
+**Settings → Equipment → Manage equipment types**. See
+[equipment types](SELF_HOSTING.md#equipment-types).
+
 ### How do I update?
 
 `git pull && docker compose pull && docker compose up -d`. Your data is untouched. See

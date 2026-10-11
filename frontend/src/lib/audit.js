@@ -60,6 +60,15 @@ const LABELS = {
   'admin.invite.create': 'Created an invite code',
   'admin.invite.revoke': 'Revoked an invite code',
   'admin.audit.clear': 'Cleared the activity log',
+  // Equipment types the instance adds (api/equipment.js); `msg` is the type's name, or for needs
+  // the exercise id and the types it now needs.
+  'admin.equipment.create': 'Added an equipment type',
+  'admin.equipment.rename': 'Renamed an equipment type',
+  'admin.equipment.delete': 'Deleted an equipment type',
+  'admin.equipment.needs': 'Changed what an exercise needs',
+  'admin.equipment.approve': 'Approved an equipment proposal',
+  'admin.equipment.merge': 'Merged an equipment proposal into a type',
+  'admin.equipment.reject': 'Rejected an equipment proposal',
   // FIRST_USER_ADMIN=1: the first profile on a fresh instance is made admin as it signs up.
   'admin.first-user': 'Became admin as the first profile',
   'admin.denied': 'Blocked from the admin dashboard',

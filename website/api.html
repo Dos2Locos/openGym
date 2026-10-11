@@ -222,6 +222,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <a class="side-link" href="#activity"><b>Activity</b><span>Live presence</span></a>
   <a class="side-link" href="#media"><b>Media</b><span>Photos &amp; videos of your exercises &amp; workouts</span></a>
   <a class="side-link" href="#coach"><b>AI Coach</b><span>Plans, reviews, debriefs</span></a>
+  <a class="side-link" href="#equipment"><b>Equipment</b><span>Added equipment types &amp; proposals</span></a>
   <a class="side-link" href="#admin"><b>Admin</b><span>Users, invites, audit log, Coach</span></a>
   <a class="side-link" href="#schemas"><b>Schemas</b><span>The state blob, the error shape &amp; co.</span></a>
   <p class="side-label">More</p>
@@ -245,7 +246,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <p class="api-facts">
     <span>OpenAPI 3.1.0</span>
     <span>openGym v1.4.1</span>
-    <span>69 endpoints</span>
+    <span>77 endpoints</span>
     <span>AGPL-3.0-or-later</span>
   </p>
 
@@ -2473,6 +2474,124 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   </div>
 </section>
 
+<section class="api-sec" id="equipment">
+  <h2>Equipment</h2>
+  <p class="sub">Equipment types the instance adds to the catalogue (<code>x-</code> ids, kept in <code>DATA_DIR/equipment.json</code>), the extra kit catalogue exercises need, and the types users propose for an admin to approve.</p>
+  <div class="eps">
+
+<details class="ep" id="op-getEquipment">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/equipment</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">The instance's added equipment types and exercise needs</span>
+  </summary>
+  <div class="ep-body">
+<p>What every signed-in app reads at start and when it comes back to the foreground, and caches for offline use. Behind a session, unlike <code>/api/config</code>: an invite-only instance shows nothing of itself to strangers. An instance with no <code>equipment.json</code> answers an empty list.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The list.<span class="r-sig"><a href="#schema-InstanceEquipment">InstanceEquipment</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-getEquipmentProposals">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/equipment/proposals</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">The caller's own equipment proposals</span>
+  </summary>
+  <div class="ep-body">
+<p>Newest first, with how each was resolved.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The caller's proposals.<span class="r-sig">{ proposals: <a href="#schema-EquipmentProposal">EquipmentProposal</a>[] }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-postEquipmentProposal">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/equipment/proposals</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Propose a new equipment type</span>
+  </summary>
+  <div class="ep-body">
+<p>Pending until an admin approves, rejects or merges it. A name the list or the catalogue already has (in any language the app ships, ignoring case and outer spaces) is refused, and a user can have at most 10 proposals waiting.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">name<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string <span class="p-hint">(&le; 40 chars)</span></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">note</span>
+    <span class="p-type">string <span class="p-hint">(&le; 200 chars)</span></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">lang</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The proposer's app language. When an admin approves the proposal under a corrected name, the proposed one is kept as the type's name in this language.</span>
+  </div>
+</div>
+<pre><code>{
+  &quot;name&quot;: &quot;Barra de dips&quot;,
+  &quot;note&quot;: &quot;la tengo en el parque&quot;,
+  &quot;lang&quot;: &quot;es&quot;
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">201</span>
+    <span class="p-desc">Proposed.<span class="r-sig">{ proposal: <a href="#schema-EquipmentProposal">EquipmentProposal</a> }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">Empty or too long a name, or too long a note.<span class="r-sig"><code>{&quot;error&quot;:&quot;name must be 1 to 40 characters&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">409</span>
+    <span class="p-desc">That equipment type already exists.<span class="r-sig"><code>{&quot;error&quot;:&quot;that equipment type already exists&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">429</span>
+    <span class="p-desc">Ten proposals of the caller are already waiting.<span class="r-sig"><code>{&quot;error&quot;:&quot;at most 10 proposals can wait at once&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+  </div>
+</section>
+
 <section class="api-sec" id="admin">
   <h2>Admin</h2>
   <p class="sub">Admin dashboard. Requires an admin session (<code>ADMIN_UIDS</code> or <code>admin:true</code>)</p>
@@ -2794,6 +2913,246 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="prow rrow">
     <span class="r-code s4">404</span>
     <span class="p-desc">No such code.<span class="r-sig"><code>{&quot;error&quot;:&quot;no such code&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-adminEquipment">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/admin/equipment</code><span class="ep-chip admin">admin</span></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Equipment types, needs and every proposal</span>
+  </summary>
+  <div class="ep-body">
+<p>Proposals come pending first, newest first, with the author's name.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Admin only: a signed-in session whose user is an admin (<code>ADMIN_UIDS</code> or <code>admin:true</code>), as the session cookie or a Bearer token.</span></p>
+
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Everything the Equipment card shows.<span class="r-sig">object</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">403</span>
+    <span class="p-desc">Signed in, but not an admin. The attempt is recorded in the audit log.<span class="r-sig"><code>{&quot;error&quot;:&quot;forbidden&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-adminEquipmentType">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/admin/equipment/types</code><span class="ep-chip admin">admin</span></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Create or rename an equipment type</span>
+  </summary>
+  <div class="ep-body">
+<p><code>{ name }</code> creates a type with a new <code>x-</code> id; <code>{ id, name }</code> renames one, keeping its id, so profiles, custom exercises and needs follow the new name. <code>names</code>, when given, replaces the type's names per language (a blank one drops that language); each is checked like the main name. Catalogue types cannot be renamed. Audited.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Admin only: a signed-in session whose user is an admin (<code>ADMIN_UIDS</code> or <code>admin:true</code>), as the session cookie or a Bearer token.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">An added type's id</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string <span class="p-hint">(&le; 40 chars)</span></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">names</span>
+    <span class="p-type">object</span>
+    <span class="p-desc">Name per app language; omitted on a rename, the type keeps its own.</span>
+  </div>
+</div>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Saved.<span class="r-sig">{ type: <a href="#schema-EquipmentType">EquipmentType</a>, rev: integer }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">A bad name, a language the app does not have, or a catalogue type.<span class="r-sig"><code>{&quot;error&quot;:&quot;catalogue equipment cannot be renamed&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">403</span>
+    <span class="p-desc">Signed in, but not an admin. The attempt is recorded in the audit log.<span class="r-sig"><code>{&quot;error&quot;:&quot;forbidden&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">No such added type.<span class="r-sig"><code>{&quot;error&quot;:&quot;no such equipment type&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">409</span>
+    <span class="p-desc">The name is taken.<span class="r-sig"><code>{&quot;error&quot;:&quot;that equipment type already exists&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-adminEquipmentTypeDelete">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/admin/equipment/types/delete</code><span class="ep-chip admin">admin</span></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Delete an equipment type</span>
+  </summary>
+  <div class="ep-body">
+<p>Also takes it off every catalogue exercise that needed it (<code>exercises</code> says how many). Profiles and custom exercises keep the id; the app no longer filters on it. Catalogue types cannot be deleted. Audited.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Admin only: a signed-in session whose user is an admin (<code>ADMIN_UIDS</code> or <code>admin:true</code>), as the session cookie or a Bearer token.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">id<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Deleted.<span class="r-sig">{ ok: boolean, exercises: integer, rev: integer }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">A catalogue type.<span class="r-sig"><code>{&quot;error&quot;:&quot;catalogue equipment cannot be deleted&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">403</span>
+    <span class="p-desc">Signed in, but not an admin. The attempt is recorded in the audit log.<span class="r-sig"><code>{&quot;error&quot;:&quot;forbidden&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">No such added type.<span class="r-sig"><code>{&quot;error&quot;:&quot;no such equipment type&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-adminEquipmentNeeds">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/admin/equipment/needs</code><span class="ep-chip admin">admin</span></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">The added types a catalogue exercise needs</span>
+  </summary>
+  <div class="ep-body">
+<p>Replaces the list for one catalogue exercise; an empty list clears it. These add to the exercise's own equipment and to the bench or bar its name implies. Audited.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Admin only: a signed-in session whose user is an admin (<code>ADMIN_UIDS</code> or <code>admin:true</code>), as the session cookie or a Bearer token.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">exId<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc">A catalogue exercise id.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">types<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string[]</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Saved.<span class="r-sig">{ exId: string, types: string[], rev: integer }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">Not a catalogue exercise, or a type that is not an existing added type.<span class="r-sig"><code>{&quot;error&quot;:&quot;no such catalogue exercise&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">403</span>
+    <span class="p-desc">Signed in, but not an admin. The attempt is recorded in the audit log.<span class="r-sig"><code>{&quot;error&quot;:&quot;forbidden&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-adminEquipmentProposalResolve">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/admin/equipment/proposals/resolve</code><span class="ep-chip admin">admin</span></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Approve, reject or merge a proposal</span>
+  </summary>
+  <div class="ep-body">
+<p><code>approve</code> creates the type, under <code>name</code> when given (a corrected spelling) or the proposed one. <code>merge</code> points the proposal at an existing added type (<code>typeId</code>) and creates nothing. <code>reject</code> creates nothing. The author sees the outcome in <code>GET /api/equipment/proposals</code>. Audited.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Admin only: a signed-in session whose user is an admin (<code>ADMIN_UIDS</code> or <code>admin:true</code>), as the session cookie or a Bearer token.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">id<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">action<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;approve&quot; | &quot;reject&quot; | &quot;merge&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string <span class="p-hint">(&le; 40 chars)</span></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">typeId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Resolved.<span class="r-sig">{ proposal: <a href="#schema-EquipmentProposal">EquipmentProposal</a>, rev: integer }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">Already resolved, an unknown action, or a merge into no added type.<span class="r-sig"><code>{&quot;error&quot;:&quot;already resolved&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">403</span>
+    <span class="p-desc">Signed in, but not an admin. The attempt is recorded in the audit log.<span class="r-sig"><code>{&quot;error&quot;:&quot;forbidden&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">No such proposal.<span class="r-sig"><code>{&quot;error&quot;:&quot;no such proposal&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">409</span>
+    <span class="p-desc">Approving under a name that is taken.<span class="r-sig"><code>{&quot;error&quot;:&quot;that equipment type already exists&quot;}</code></span></span>
   </div>
     </div>
   </div>
@@ -4357,6 +4716,125 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-name">workouts</span>
     <span class="p-type"><a href="#schema-Workout">Workout</a>[]</span>
     <span class="p-desc">Full history, newest first.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-InstanceEquipment">
+  <summary>
+    <span class="sch-name"><code>InstanceEquipment</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">rev</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc">Goes up with every change.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">types</span>
+    <span class="p-type"><a href="#schema-EquipmentType">EquipmentType</a>[]</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">needs</span>
+    <span class="p-type">object</span>
+    <span class="p-desc">Catalogue exercise id → the added type ids it needs.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-EquipmentType">
+  <summary>
+    <span class="sch-name"><code>EquipmentType</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"><code>x-</code> and 8 hex characters; never changes.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string <span class="p-hint">(&le; 40 chars)</span></span>
+    <span class="p-desc">The main name</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">names</span>
+    <span class="p-type">object</span>
+    <span class="p-desc">The type's name per app language (<code>en</code>, <code>de</code>, <code>pt-BR</code>…; derived languages such as <code>de-CH</code> read their base). The app shows the reader's language, then the main name.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">created</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">ms since epoch</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-EquipmentProposal">
+  <summary>
+    <span class="sch-name"><code>EquipmentProposal</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">note</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">lang</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The proposer's app language.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">at</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">ms since epoch</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">status</span>
+    <span class="p-type">&quot;pending&quot; | &quot;approved&quot; | &quot;rejected&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">resolvedAt</span>
+    <span class="p-type">number</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">typeId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The type it was approved as or merged into.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">typeName</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">That type's current name.</span>
   </div>
 </div>
   </div>

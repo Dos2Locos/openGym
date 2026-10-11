@@ -145,6 +145,11 @@ tags:
     description: Web Push (VAPID) subscriptions, rest-timer and test pushes
   - name: activity
     description: Live-workout presence heartbeat
+  - name: equipment
+    description: >-
+      Equipment types the instance adds to the catalogue (`x-` ids, kept in
+      `DATA_DIR/equipment.json`), the extra kit catalogue exercises need, and the types
+      users propose for an admin to approve.
   - name: admin
     description: Admin dashboard. Requires an admin session (`ADMIN_UIDS` or `admin:true`)
   - name: media
@@ -2053,6 +2058,96 @@ paths:
               schema: { $ref: '#/components/schemas/Ok' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/equipment:
+    get:
+      tags: [equipment]
+      operationId: getEquipment
+      summary: The instance's added equipment types and exercise needs
+      description: >-
+        What every signed-in app reads at start and when it comes back to the foreground,
+        and caches for offline use. Behind a session, unlike `/api/config`: an invite-only
+        instance shows nothing of itself to strangers. An instance with no
+        `equipment.json` answers an empty list.
+      responses:
+        '200':
+          description: The list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InstanceEquipment' }
+              example: { rev: 4, types: [{ id: x-1a2b3c4d, name: Step, created: 1791720000000 }], needs: { '0336': [x-1a2b3c4d] } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/equipment/proposals:
+    get:
+      tags: [equipment]
+      operationId: getEquipmentProposals
+      summary: The caller's own equipment proposals
+      description: Newest first, with how each was resolved.
+      responses:
+        '200':
+          description: The caller's proposals.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposals:
+                    type: array
+                    items: { $ref: '#/components/schemas/EquipmentProposal' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [equipment]
+      operationId: postEquipmentProposal
+      summary: Propose a new equipment type
+      description: >-
+        Pending until an admin approves, rejects or merges it. A name the list or the
+        catalogue already has (in any language the app ships, ignoring case and outer
+        spaces) is refused, and a user can have at most 10 proposals waiting.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 40 }
+                note: { type: string, maxLength: 200 }
+                lang:
+                  type: string
+                  description: >-
+                    The proposer's app language. When an admin approves the proposal under a
+                    corrected name, the proposed one is kept as the type's name in this language.
+            example: { name: Barra de dips, note: la tengo en el parque, lang: es }
+      responses:
+        '201':
+          description: Proposed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposal: { $ref: '#/components/schemas/EquipmentProposal' }
+        '400':
+          description: Empty or too long a name, or too long a note.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "name must be 1 to 40 characters" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: That equipment type already exists.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "that equipment type already exists" }
+        '429':
+          description: Ten proposals of the caller are already waiting.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "at most 10 proposals can wait at once" }
+
   /api/activity:
     post:
       tags: [activity]
@@ -2353,6 +2448,227 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
               example: { error: "no such code" }
+
+  /api/admin/equipment:
+    get:
+      tags: [admin, equipment]
+      operationId: adminEquipment
+      summary: 'Admin: equipment types, needs and every proposal'
+      description: Proposals come pending first, newest first, with the author's name.
+      responses:
+        '200':
+          description: Everything the Equipment card shows.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/InstanceEquipment' }
+                  - type: object
+                    properties:
+                      proposals:
+                        type: array
+                        items:
+                          allOf:
+                            - { $ref: '#/components/schemas/EquipmentProposal' }
+                            - type: object
+                              properties:
+                                uid: { type: string }
+                                author: { type: string, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/equipment/types:
+    post:
+      tags: [admin, equipment]
+      operationId: adminEquipmentType
+      summary: 'Admin: create or rename an equipment type'
+      description: >-
+        `{ name }` creates a type with a new `x-` id; `{ id, name }` renames one, keeping
+        its id, so profiles, custom exercises and needs follow the new name. `names`, when
+        given, replaces the type's names per language (a blank one drops that language);
+        each is checked like the main name. Catalogue types cannot be renamed. Audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                id: { type: string, description: An added type's id, to rename it. }
+                name: { type: string, minLength: 1, maxLength: 40 }
+                names:
+                  type: object
+                  description: Name per app language; omitted on a rename, the type keeps its own.
+                  additionalProperties: { type: string, maxLength: 40 }
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type: { $ref: '#/components/schemas/EquipmentType' }
+                  rev: { type: integer }
+        '400':
+          description: A bad name, a language the app does not have, or a catalogue type.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "catalogue equipment cannot be renamed" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No such added type.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "no such equipment type" }
+        '409':
+          description: The name is taken.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "that equipment type already exists" }
+
+  /api/admin/equipment/types/delete:
+    post:
+      tags: [admin, equipment]
+      operationId: adminEquipmentTypeDelete
+      summary: 'Admin: delete an equipment type'
+      description: >-
+        Also takes it off every catalogue exercise that needed it (`exercises` says how
+        many). Profiles and custom exercises keep the id; the app no longer filters on it.
+        Catalogue types cannot be deleted. Audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  exercises: { type: integer }
+                  rev: { type: integer }
+        '400':
+          description: A catalogue type.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "catalogue equipment cannot be deleted" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No such added type.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "no such equipment type" }
+
+  /api/admin/equipment/needs:
+    post:
+      tags: [admin, equipment]
+      operationId: adminEquipmentNeeds
+      summary: 'Admin: the added types a catalogue exercise needs'
+      description: >-
+        Replaces the list for one catalogue exercise; an empty list clears it. These
+        add to the exercise's own equipment and to the bench or bar its name implies.
+        Audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [exId, types]
+              properties:
+                exId: { type: string, description: A catalogue exercise id. }
+                types:
+                  type: array
+                  items: { type: string, description: An added type's id. }
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exId: { type: string }
+                  types: { type: array, items: { type: string } }
+                  rev: { type: integer }
+        '400':
+          description: Not a catalogue exercise, or a type that is not an existing added type.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "no such catalogue exercise" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/equipment/proposals/resolve:
+    post:
+      tags: [admin, equipment]
+      operationId: adminEquipmentProposalResolve
+      summary: 'Admin: approve, reject or merge a proposal'
+      description: >-
+        `approve` creates the type, under `name` when given (a corrected spelling) or the
+        proposed one. `merge` points the proposal at an existing added type (`typeId`) and
+        creates nothing. `reject` creates nothing. The author sees the outcome in
+        `GET /api/equipment/proposals`. Audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, action]
+              properties:
+                id: { type: string }
+                action: { type: string, enum: [approve, reject, merge] }
+                name: { type: string, maxLength: 40 }
+                typeId: { type: string }
+      responses:
+        '200':
+          description: Resolved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposal: { $ref: '#/components/schemas/EquipmentProposal' }
+                  rev: { type: integer }
+        '400':
+          description: Already resolved, an unknown action, or a merge into no added type.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "already resolved" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No such proposal.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "no such proposal" }
+        '409':
+          description: Approving under a name that is taken.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "that equipment type already exists" }
 
   /api/admin/audit:
     get:
@@ -3610,6 +3926,41 @@ components:
           description: Full history, newest first.
           items: { $ref: '#/components/schemas/Workout' }
 
+    InstanceEquipment:
+      type: object
+      properties:
+        rev: { type: integer, description: Goes up with every change. }
+        types:
+          type: array
+          items: { $ref: '#/components/schemas/EquipmentType' }
+        needs:
+          type: object
+          description: Catalogue exercise id → the added type ids it needs.
+          additionalProperties: { type: array, items: { type: string } }
+    EquipmentType:
+      type: object
+      properties:
+        id: { type: string, description: '`x-` and 8 hex characters; never changes.' }
+        name: { type: string, maxLength: 40, description: The main name, shown where the type has no name in the reader's language. }
+        names:
+          type: object
+          description: >-
+            The type's name per app language (`en`, `de`, `pt-BR`…; derived languages such as
+            `de-CH` read their base). The app shows the reader's language, then the main name.
+          additionalProperties: { type: string, maxLength: 40 }
+        created: { type: number, description: ms since epoch }
+    EquipmentProposal:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        note: { type: string }
+        lang: { type: string, nullable: true, description: The proposer's app language. }
+        at: { type: number, description: ms since epoch }
+        status: { type: string, enum: [pending, approved, rejected] }
+        resolvedAt: { type: number, nullable: true }
+        typeId: { type: string, nullable: true, description: The type it was approved as or merged into. }
+        typeName: { type: string, nullable: true, description: That type's current name. }
     Invite:
       type: object
       properties:
