@@ -7,7 +7,7 @@
 // Names stay canonical English — they become ordinary user routines, which are not translated.
 import { uid } from './format.js'
 import { EXIDX } from './exercises.js'
-import { eqAvailable, ALL_EQUIPMENT } from './equipment.js'
+import { eqAvailable, ALL_EQUIPMENT, currentInstance } from './equipment.js'
 
 const PPL = [
   ['push', 'Push Day', 'barbell', [['0025', 4, 8], ['0047', 3, 10], ['0426', 3, 10], ['0334', 3, 12], ['0241', 3, 12], ['0251', 3, 10]]],
@@ -84,7 +84,7 @@ export const substituteFor = (ex, equipment, taken) => {
   const loaded = ex.eq !== 'body weight'
   let best = null, bestScore = -Infinity
   for (const c of Object.values(EXIDX)) {
-    if (c.bp !== ex.bp || taken.has(c.id) || !eqAvailable(equipment, c)) continue
+    if (c.bp !== ex.bp || taken.has(c.id) || !eqAvailable(equipment, c, currentInstance())) continue
     if (NOT_A_LIFT.test(c.n) || (!hasBall && NEEDS_BALL.test(c.n))) continue
     const sm = jaccard(exSm, new Set([c.mg, ...(c.sm || [])]))
     if (c.tg !== ex.tg && c.mg !== ex.mg && !sm) continue
@@ -106,7 +106,7 @@ const fitRoutines = (routines, equipment) => {
     const out = []
     for (const [id, sets, reps] of list) {
       const ex = EXIDX[id]
-      if (!ex || eqAvailable(equipment, ex)) { out.push([id, sets, reps]); continue }
+      if (!ex || eqAvailable(equipment, ex, currentInstance())) { out.push([id, sets, reps]); continue }
       const sub = substituteFor(ex, equipment, taken)
       if (!sub) { dropped++; continue }
       taken.add(sub.id)

@@ -35,6 +35,7 @@ import { effectiveRoutineId } from './queue.js';
 import { stampPut } from './sync-stamps.js';
 import { atomicWrite as durableWrite } from './durable.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
+import { createEquipmentStore } from './equipment.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -147,6 +148,8 @@ db.subs = db.subs || [];
 db.invites = db.invites || [];
 db.deviceLinks = db.deviceLinks || [];   // unused one-time device links, hashed (device-link.js)
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
+// Equipment types the instance adds, their proposals and the needs on catalogue exercises (equipment.js).
+const EQUIPMENT = createEquipmentStore(DATA);
 // 0600: db.json holds passkey credential material. It used to be covered by a blanket 0700 on
 // the whole directory; now that the directory stays traversable, the file carries its own mode.
 // Once the new version is on disk, a second copy of it goes to db.json.bak, the same durable
@@ -2403,6 +2406,29 @@ const routes = {
     json(res, 200, { ok: true });
   },
 
+  /* ---------- equipment types ---------- */
+  // The instance's added equipment types and the extra kit catalogue exercises need. Behind a
+  // session, unlike /api/config: an invite-only instance shows nothing of itself to strangers.
+  'GET /api/equipment': async (req, res) => {
+    if (!readSession(req)) return json(res, 401, { error: 'not signed in' });
+    json(res, 200, EQUIPMENT.view());
+  },
+
+  'GET /api/equipment/proposals': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    json(res, 200, { proposals: EQUIPMENT.proposalsOf(user.id) });
+  },
+
+  // A type the user would like on the list: pending until an admin resolves it.
+  'POST /api/equipment/proposals': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const r = EQUIPMENT.propose(user.id, await readBody(req));
+    if (r.error) return json(res, r.status, { error: r.error });
+    json(res, 201, { proposal: r.proposal });
+  },
+
   /* ---------- admin dashboard ---------- */
   // One row per user, cheap enough for a personal instance (reads each state file once).
   'GET /api/admin/users': async (req, res) => {
@@ -2531,6 +2557,49 @@ const routes = {
     saveDb();
     audit(req, 'admin.invite.revoke', { user: admin, msg: inv.code });
     json(res, 200, { ok: true });
+  },
+
+  /* ---------- equipment types (admin) ---------- */
+  'GET /api/admin/equipment': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    json(res, 200, EQUIPMENT.adminView(uid => db.users.find(u => u.id === uid)?.name || null));
+  },
+
+  // { name } creates a type, { id, name } renames one.
+  'POST /api/admin/equipment/types': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const r = EQUIPMENT.saveType(await readBody(req));
+    if (r.error) return json(res, r.status, { error: r.error });
+    audit(req, r.created ? 'admin.equipment.create' : 'admin.equipment.rename', { user: admin, msg: r.type.name });
+    json(res, 200, { type: r.type, rev: EQUIPMENT.view().rev });
+  },
+
+  'POST /api/admin/equipment/types/delete': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const r = EQUIPMENT.deleteType(text((await readBody(req)).id));
+    if (r.error) return json(res, r.status, { error: r.error });
+    audit(req, 'admin.equipment.delete', { user: admin, msg: r.type.name });
+    json(res, 200, { ok: true, exercises: r.exercises, rev: EQUIPMENT.view().rev });
+  },
+
+  // { exId, types }: what a catalogue exercise needs beside its own equipment; [] clears it.
+  'POST /api/admin/equipment/needs': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const r = EQUIPMENT.setNeeds(await readBody(req));
+    if (r.error) return json(res, r.status, { error: r.error });
+    audit(req, 'admin.equipment.needs', { user: admin, msg: `${r.exId}: ${r.types.join(', ') || '-'}` });
+    json(res, 200, { exId: r.exId, types: r.types, rev: EQUIPMENT.view().rev });
+  },
+
+  // { id, action: approve | reject | merge, name?, typeId? }
+  'POST /api/admin/equipment/proposals/resolve': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const body = await readBody(req);
+    const r = EQUIPMENT.resolve(body);
+    if (r.error) return json(res, r.status, { error: r.error });
+    const ev = { approve: 'admin.equipment.approve', merge: 'admin.equipment.merge', reject: 'admin.equipment.reject' }[body.action];
+    audit(req, ev, { user: admin, msg: r.proposal.typeName || r.proposal.name });
+    json(res, 200, { proposal: r.proposal, rev: EQUIPMENT.view().rev });
   },
 
   /* ---------- activity log ---------- */

@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
-import { activeProfile, exAvailable } from '../lib/equipment.js'
+import { activeProfile, exAvailable, eqLabel, missingEquipment } from '../lib/equipment.js'
+import { useInstanceEquipment } from '../lib/instance-equipment.js'
 import { uid, exerciseNameText } from '../lib/format.js'
 import { t, exerciseNameFor, exerciseNameClass } from '../lib/i18n.js'
 import { supersetUnits, moveRoutineEntry, cleanupSg, exLine, defaultConfig } from '../lib/history.js'
@@ -366,6 +367,7 @@ export default function RoutineEdit() {
   const nav = useNavigate()
   const { id } = useParams()
   const S = useStore(s => s.S)
+  useInstanceEquipment(s => s.inst)   // a new need marks an exercise without a reload
   const update = useStore(s => s.update)
   const toast = useUI(s => s.toast)
   const r = S.routines.find(x => x.id === id)
@@ -535,7 +537,7 @@ export default function RoutineEdit() {
           <Thumb ex={ex} />
           <button type="button" className="grow item-open" data-row-open><span className={`tt ${exerciseNameClass(ex)}`}>{exerciseNameFor(ex)}</span><span className="ss">{exLine(e, S.unit, speedUnitOf(S))}</span>
             {e.note && <span className="small dim" style={{ marginTop: 2 }}>{e.note}</span>}</button>
-          {noEquip && <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }} title={t('Needs {0}, which isn’t in your active profile', t(ex.eq))}><Icon name="warning" /></span>}
+          {noEquip && <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }} title={t('Needs {0}, which isn’t in your active profile', missingEquipment(S, ex).map(k => eqLabel(k)).join(', ') || eqLabel(ex.eq))}><Icon name="warning" /></span>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
             {i > 0 && <button className={'iconbtn' + (linkedPrev ? ' on-ss' : '')} title={t('Superset with exercise above')} style={{ width: 32, height: 28, borderRadius: 8, fontSize: 15 }} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /></button>}
             <div style={{ display: 'flex', gap: 2 }}>

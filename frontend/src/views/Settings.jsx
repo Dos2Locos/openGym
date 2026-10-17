@@ -44,6 +44,9 @@ import { passwordOn, PasswordRow, openPasswordSignIn, openPasswordRegister } fro
 import { usePasskeys, PasskeysRow, DeviceLinkRow, openDeviceLinkRedeem } from '../components/Passkeys.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, SearchField } from '../components/ui.jsx'
 import { PAGES, ROOT_GROUPS, pageVisible, searchSettings, pageTrail } from './settings-pages.js'
+import { profileEquipment } from '../lib/equipment.js'
+import { useInstanceEquipment } from '../lib/instance-equipment.js'
+import { ProposeEquipmentRows, LocalEquipmentRow } from '../components/EquipmentTypes.jsx'
 
 /* Settings (v1.3.11). The root is one screen: an account card, eleven rows that each open a page
    (/settings/<page>), and a search over every row. Rare things live one level further down
@@ -1282,6 +1285,9 @@ function AccentSwatches({ S, update }) {
 
 function EquipmentCard({ S, update }) {
   const profiles = S.equipProfiles || []
+  const inst = useInstanceEquipment(s => s.inst)
+  const user = useStore(s => s.user)
+  const nav = useNavigate()
   const remove = p => confirmSheet({
     title: t('Delete profile?'), message: t('"{0}" and its equipment list will be removed.', p.name),
     confirmText: t('Delete'), danger: true,
@@ -1310,12 +1316,18 @@ function EquipmentCard({ S, update }) {
       options={profiles.map(p => ({ value: p.id, label: p.name }))} />}
     {profiles.map(p => (
       <Row key={p.id} icon="house" iconTint="var(--teal)" title={p.name}
-        subtitle={t('{0} equipment types', p.equipment.length)} accessory="chevron"
+        subtitle={t('{0} equipment types', profileEquipment(p, inst).length)} accessory="chevron"
         onClick={() => equipmentProfileSheet(p)}>
         <button className="iconbtn" aria-label={t('Delete')} onClick={ev => { ev.stopPropagation(); remove(p) }}><Icon name="trash" /></button>
       </Row>
     ))}
     <Row icon="plus" iconTint="var(--acc)" title={t('Add equipment profile')} accessory="chevron" onClick={() => equipmentProfileSheet(null)} />
+    {/* The list of types is the instance's: an admin keeps it on the dashboard, everyone else
+        signed in proposes; with no server, this device is the instance and you keep it yourself. */}
+    {!user ? <LocalEquipmentRow />
+      : user.admin ? <Row icon="kettlebell" iconTint="var(--orange)" title={t('Manage equipment types')} subtitle={t('Admin dashboard')}
+        accessory="chevron" onClick={() => nav('/admin')} />
+      : <ProposeEquipmentRows />}
   </Section>
 }
 

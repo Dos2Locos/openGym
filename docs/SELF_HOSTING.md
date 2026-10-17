@@ -8,7 +8,7 @@ This guide takes you from "just cloned it" to "using it from my phone over the i
 1. [Run it locally](#1-run-it-locally-5-minutes) — five minutes, nothing else needed
 2. [The passkey requirement](#2-understand-the-passkey-requirement-important) — why your phone needs HTTPS
 3. [HTTPS on your own domain](#3-expose-it-over-https-on-your-own-domain) — Cloudflare Tunnel, Caddy, Traefik, nginx
-4. [Multiple users](#4-multiple-users) — admin dashboard, invites, language, activity log, password sign-in
+4. [Multiple users](#4-multiple-users) — admin dashboard, invites, equipment types, language, activity log, password sign-in
 5. [Fitting into an existing stack](#5-fitting-it-into-an-existing-stack) — ports, subpaths, media uploads
 6. [Backups](#6-backups)
 7. [Notifications](#7-notifications)
@@ -227,6 +227,41 @@ right now, each user's workout history and body weight, the ability to disable a
 out and locked out everywhere until you re-enable it), and — with `INVITE_ONLY=1` — generating and
 revoking invite codes. Existing accounts keep working when you switch invite-only on. Admin access
 is gated by your passkey and enforced server-side, so it needs no separate login.
+
+### Equipment types
+
+The equipment list everyone picks from — the checklist of an equipment profile, the chips of a
+custom exercise — is the catalogue's own types plus any your instance adds. Adding one (a roman
+chair, a dip bar, a basketball) needs no rebuild: it is the **Equipment** card on the admin
+dashboard.
+
+- **Types.** Create, rename and delete added types there. A rename keeps the type's id, so the
+  profiles and custom exercises that use it simply show the new name. Deleting one takes it off
+  every catalogue exercise that needed it; a custom exercise that used it stays visible under
+  every profile. The catalogue's own types can't be renamed or deleted.
+- **Names in every language.** A type has a main name and, under **Translations**, a name in each
+  of the app's languages. Everyone sees it in the language their app is set to, and the main name
+  where that language has none. Each type shows how many languages it covers ("Languages: 5/19"),
+  and the editor lists the missing ones first: fill in as many as you can if people on your
+  instance use different languages. A name can't repeat another type's name or translation, nor
+  a catalogue type's in any language.
+- **Exercise needs.** A catalogue exercise can also need one or more added types, on top of its
+  own equipment and the bench or bar its name implies — "dumbbell step-up" needs a step. With
+  the equipment filter on, it then only shows to profiles that have that type too.
+- **Proposals.** Anyone signed in can propose a type from **Settings → Equipment → Propose
+  equipment**, with a note. It waits on the card until an admin approves it (the name can be
+  corrected first), rejects it, or merges it into a type that already exists; the person sees
+  the answer under *My proposals*. Ten proposals per person can wait at once. A proposal remembers the
+  language it was made in: approve it under a corrected main name and the proposed one stays as
+  that language's name.
+
+Without a server — a guest, or the phone app in local mode — there is no admin: the device keeps
+its own list under **Settings → Equipment → Manage equipment types**, with the same rules and
+translations. Admins signed in find the same row there; it opens the admin dashboard. That
+list stays on the device and is not uploaded when it later signs in to a server.
+
+The list lives in `./data/equipment.json` (see [Backups](#6-backups)). An instance without that
+file behaves exactly as before; it is written the first time an admin changes something.
 
 ### Default language
 
@@ -573,7 +608,8 @@ tar czf opengym-backup-$(date +%F).tar.gz data/
 ```
 
 That archive contains all profiles, passkeys and workout history — and, if the activity log is
-on, `audit.log` with everyone's sign-in times. Worth knowing before you ship the archive to a
+on, `audit.log` with everyone's sign-in times. The equipment types your admins added, the needs they set on catalogue
+exercises and the proposals waiting for them are in `equipment.json`, in the same folder. Worth knowing before you ship the archive to a
 backup service you don't run. Restore by unpacking it back into the project folder. (Individual
 users can also export their own data as JSON from Settings → Data & backup.)
 

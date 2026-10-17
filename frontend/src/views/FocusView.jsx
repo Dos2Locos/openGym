@@ -21,6 +21,7 @@ import { ownedWeightsFor, stepOwned } from '../lib/dumbbells.js'
 import Icon from '../components/Icon.jsx'
 import { Button, Stepper } from '../components/ui.jsx'
 import './FocusView.css'
+import { eqLabel } from '../lib/equipment.js'
 
 const firstIncomplete = entry => {
   const index = entry.sets.findIndex(set => !set.done)
@@ -271,7 +272,7 @@ export default function FocusView({
           {mode === 'cardio' && <span className="tag acc">{t('Cardio')}</span>}
           {isSideSet(set) && <span className="tag acc">{t('Per side')}</span>}
           {(ex.tg || ex.bp) && <span className="tag">{t(ex.tg || ex.bp)}</span>}
-          {ex.eq && <span className="tag">{t(ex.eq)}</span>}
+          {ex.eq && <span className="tag">{eqLabel(ex.eq)}</span>}
         </div>
         {entry.target?.note && <div className="focus-note">{entry.target.note}</div>}
         {pinnedNote && <div className="focus-note pinned"><Icon name="flag" />{t('From {0}:', fmtDate(pinnedNote.d, true))} {pinnedNote.note}</div>}
