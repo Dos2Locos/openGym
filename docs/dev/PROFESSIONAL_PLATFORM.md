@@ -16,7 +16,7 @@ Estado: `pendiente` → `propuesta` (cambio creado) → `en curso` → `hecha` (
 
 | ID | Cambio OpenSpec              | Vía | Depende de     | Estado    |
 |----|------------------------------|-----|----------------|-----------|
-| B1 | `console-admin-redesign`     | B   | —              | hecha (pendiente de archivar) |
+| B1 | `console-admin-redesign`     | B   | —              | hecha     |
 | B2 | `server-modules-postgres`    | B   | —              | pendiente |
 | A1 | `per-set-prescription`       | A   | —              | pendiente |
 | A2 | `rehab-self-managed`         | A   | (A1 recomend.) | pendiente |
