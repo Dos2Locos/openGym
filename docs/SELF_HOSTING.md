@@ -222,10 +222,14 @@ nobody could generate the first code.
 For more admins (or on an instance that existed before `FIRST_USER_ADMIN`), copy the id from
 **Settings → Account → Account ID** (tap it to copy; it is also in `./data/db.json` under
 `users[].id`) and put it in `ADMIN_UIDS`. The same row is how anyone on your instance tells you
-which account is theirs when they need help. Admins get an **Admin dashboard** link in Settings → Account: who's training
-right now, each user's workout history and body weight, the ability to disable an account (signed
-out and locked out everywhere until you re-enable it), and — with `INVITE_ONLY=1` — generating and
-revoking invite codes. Existing accounts keep working when you switch invite-only on. Admin access
+which account is theirs when they need help. Admins get an **Admin dashboard** link in Settings → Account
+that opens the console (`/console`, laid out for a computer and usable on a phone): who's training
+right now, every account with its counts of workouts, weigh-ins and routines, the ability to
+disable an account (signed out and locked out everywhere until you re-enable it) or delete it,
+and — with `INVITE_ONLY=1` — generating and revoking invite codes. The console shows the admin
+how much each person has logged, never what: workouts, weights and body measurements stay the
+user's own. Someone who wants their history before their account is deleted exports it
+themselves, from Settings. Existing accounts keep working when you switch invite-only on. Admin access
 is gated by your passkey and enforced server-side, so it needs no separate login.
 
 ### Equipment types
@@ -257,7 +261,7 @@ dashboard.
 
 Without a server — a guest, or the phone app in local mode — there is no admin: the device keeps
 its own list under **Settings → Equipment → Manage equipment types**, with the same rules and
-translations. Admins signed in find the same row there; it opens the admin dashboard. That
+translations. Admins signed in find the same row there; it opens the console's Equipment section. That
 list stays on the device and is not uploaded when it later signs in to a server.
 
 The list lives in `./data/equipment.json` (see [Backups](#6-backups)). An instance without that
@@ -403,7 +407,7 @@ name-taken answer already says about names. The other thing to know: once someon
 account by wrong passwords under its name, trying a guessed address shows the same pause, which
 ties that address to that name — the price of not letting a switch to the e-mail skip the pause.
 
-**Resetting a password.** There is no e-mail. In the admin dashboard open the user and choose
+**Resetting a password.** There is no e-mail. In the console open the user and choose
 **Reset password**. You get a one-time code such as `K7WQ-2MZP-4HXA` to hand over in person or
 by message: it is shown once, works once, is valid for 24 hours and is stored only as a hash.
 Issuing it removes their current password and signs them out everywhere at once — their passkeys

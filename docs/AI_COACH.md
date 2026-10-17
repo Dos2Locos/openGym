@@ -48,8 +48,8 @@ own (see [On the phone](#on-the-phone)).
 
 The entry appears only when all of these hold:
 
-- **The master switch is on.** That is **Set up the Coach** on the admin card
-  (**Settings → Account → Admin dashboard**, the **AI Coach** card), and afterwards the toggle at the top
+- **The master switch is on.** That is **Set up the Coach** in the console
+  (**Settings → Account → Admin dashboard**, the console's **AI Coach** section), and afterwards the toggle at the top
   of the same card. A provider that is connected and passes **Test the Coach** is not enough
   on its own: with the switch off, the server tells every app there is no Coach, and the card
   reads *Off right now — nobody sees it anywhere in the app*.
@@ -68,7 +68,7 @@ picks it up the next time it is opened or reloaded.
 **1. Get a key** from the provider's own console. For a compatible endpoint, get the URL it
 answers on instead, and a key only if it wants one.
 
-**2. Connect it.** In the app: **Settings → Account → Admin dashboard**, the **AI Coach** card.
+**2. Connect it.** In the app: **Settings → Account → Admin dashboard**, the console's **AI Coach** section.
 
 - Toggle the card on.
 - Pick the provider chip.
@@ -165,7 +165,7 @@ Complete its normal browser sign-in and copy the token it prints. openGym never 
 that flow — it only ever receives the finished token. (Claude also accepts an Anthropic API key
 here, under the same chip; the setup token is the route for a Claude subscription.)
 
-**3. Connect it.** In the app: **Settings → Account → Admin dashboard**, the **AI Coach** card.
+**3. Connect it.** In the app: **Settings → Account → Admin dashboard**, the console's **AI Coach** section.
 
 - Toggle the card on.
 - Pick the **Claude (Anthropic)** provider chip.
@@ -195,7 +195,7 @@ validator rather than trimmed. The card is kept in the Coach's history like ever
 
 ### Comparing with others on the instance
 
-Off unless the admin turns it on (**Settings → Account → Admin dashboard**, the **AI Coach** card →
+Off unless the admin turns it on (**Settings → Account → Admin dashboard**, the console's **AI Coach** section →
 **Advanced → Let people compare with each other**), and then still off for each person until they
 opt in themselves (**Compare with others here → Include me** in the Coach chat). The trade is
 symmetric: a profile that does not share sees nothing.

@@ -1,9 +1,9 @@
 // Equipment types an instance adds to the catalogue (lib/instance-equipment.js, api/equipment.js).
 //
 //   EquipmentManager      the list, renaming, deleting, and the extra kit catalogue exercises need.
-//                         One UI for two owners: the admin card (views/Admin.jsx, in English like
-//                         the rest of the dashboard) saving through the API, and a device with no
-//                         server saving to its own list. Labels come in through `tr`.
+//                         One UI for two owners: the console's Equipment section
+//                         (views/console/Equipment.jsx) saving through the API, and a device with
+//                         no server saving to its own list. Labels come in through `tr`.
 //   ProposeEquipmentRows  Settings → Equipment, signed in: propose a type, see what became of it.
 //   LocalEquipmentRow     Settings → Equipment, no server: the device's own list.
 import { useEffect, useRef, useState } from 'react'
@@ -24,9 +24,6 @@ const NOTE_MAX = 200
 const PENDING_MAX = 10
 const errStyle = { color: 'var(--red)', marginTop: 8 }
 
-// The words EquipmentManager shows, through `tr`: t for a user's own list, plain English
-// (with {0} filled in) for the admin dashboard.
-export const english = (s, ...args) => s.replace(/\{(\d+)\}/g, (m, i) => (args[i] !== undefined ? String(args[i]) : m))
 
 function errorText(code, tr) {
   if (code === 'name') return tr('Use 1 to {0} characters.', NAME_MAX)

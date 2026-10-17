@@ -43,7 +43,7 @@ import Muscles from './views/Muscles.jsx'
 import StructuralBalance from './views/StructuralBalance.jsx'
 import ProgressPhotos from './views/ProgressPhotos.jsx'
 import { SettingsRoute } from './views/Settings.jsx'
-import Admin from './views/Admin.jsx'
+import ConsoleRoutes from './views/console/ConsoleRoutes.jsx'
 import CoachChat from './views/CoachChat.jsx'
 import Measurements from './views/Measurements.jsx'
 import CoachIntake from './views/CoachIntake.jsx'
@@ -222,6 +222,18 @@ function Shell() {
     </div>
   )
 
+  // The console (/console/*) is a page of its own: no #app, no tab bar, no rest timer. The
+  // sheets, toasts and the connection banner stay, so confirmSheet and toast work there too.
+  const inConsole = loc.pathname === '/console' || loc.pathname.startsWith('/console/')
+  if (inConsole && authed && !needsMobileOnboarding) return (
+    <>
+      <ConsoleRoutes />
+      <SyncBanner />
+      <Modals />
+      <Toast />
+    </>
+  )
+
   return (
     <>
       {/* keyed on the route: a view that throws is contained, and switching tabs
@@ -253,7 +265,7 @@ function Shell() {
               <Route path="/coach/intake" element={<CoachIntake />} />
               <Route path="/coach/proposal" element={<Navigate to="/coach" replace />} />
               <Route path="/coach/setup" element={<CoachSetup />} />
-              <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
+              <Route path="/admin" element={<Navigate to="/console" replace />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
           )}

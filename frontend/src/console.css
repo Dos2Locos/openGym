@@ -1,0 +1,328 @@
+/* Console — /console/*, the operator's workspace (and, later, the professionals': see
+   docs/dev/PROFESSIONAL_PLATFORM.md). A page of its own outside #app: a fixed navigation beside
+   the content on a wide screen, folded behind a menu button on a narrow one. Built only on the
+   app's tokens (index.css), so light/dark and the user's accent apply by themselves. Logical
+   properties throughout, so Arabic mirrors without a rule of its own. */
+
+body.in-console{font-size:15px}
+.con{min-height:100vh;min-height:100dvh;display:flex;background:var(--bg)}
+.con .grow{flex:1;min-width:0}
+
+/* ---------------------------------------------------------------- navigation -- */
+.con-side{
+  position:sticky;top:0;height:100vh;height:100dvh;width:240px;flex:none;
+  display:flex;flex-direction:column;
+  padding:calc(var(--sat) + var(--conn) + 18px) 12px calc(var(--sab) + 16px);
+  background:var(--bg-el);border-inline-end:var(--hair) solid var(--sep);overflow-y:auto
+}
+.con-brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:17px;letter-spacing:-.02em;padding:4px 10px 20px}
+.con-brand .icn{color:var(--acc);font-size:20px}
+.con-nav-list{flex:1;display:flex;flex-direction:column;gap:18px}
+.con-nav-group{display:flex;flex-direction:column;gap:2px}
+.con-nav-area{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--label-3);padding:0 10px 6px}
+.con-nav-link{
+  display:flex;align-items:center;gap:10px;width:100%;min-height:38px;padding:7px 10px;border-radius:9px;
+  color:var(--label);font-size:14.5px;text-align:start;transition:background var(--fast)
+}
+.con-nav-link .icn{font-size:17px;color:var(--label-2);flex:none}
+.con-nav-link.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.con-nav-link.on .icn{color:var(--acc)}
+.con-back{margin-top:16px;color:var(--label-2)}
+@media (hover:hover){.con-nav-link:not(.on):hover{background:var(--surface)}}
+.con :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+.con-nav-link:focus-visible{outline-offset:-2px}
+.con-scrim,.con-top{display:none}
+
+.con-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.con-body{width:100%;max-width:1200px;padding:calc(var(--sat) + var(--conn) + 28px) 32px calc(var(--sab) + 48px)}
+
+@media (max-width:899px){
+  .con-side{
+    position:fixed;inset-block:0;inset-inline-start:0;z-index:40;width:min(280px,84vw);
+    transform:translateX(-100%);transition:transform var(--med) var(--ease);
+    box-shadow:0 0 40px rgba(0,0,0,.35)
+  }
+  [dir="rtl"] .con-side{transform:translateX(100%)}
+  .con.menu-open .con-side{transform:none}
+  .con-scrim{display:block;position:fixed;inset:0;z-index:39;background:rgba(0,0,0,.42)}
+  .con-top{
+    display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20;
+    padding:calc(var(--sat) + var(--conn) + 8px) 16px 8px;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);
+    -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    border-bottom:var(--hair) solid var(--sep-op)
+  }
+  .con-top-t{font-weight:600;font-size:17px;letter-spacing:-.02em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .con-body{padding:16px 16px calc(var(--sab) + 40px)}
+}
+
+/* -------------------------------------------------------------- page parts -- */
+.con-ph{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:0 0 20px}
+.con-ph-t{flex:1;min-width:0}
+.con-ph h1{margin:0;font-size:26px;font-weight:600;letter-spacing:-.022em;line-height:1.15;overflow-wrap:break-word}
+.con-ph-sub{color:var(--label-2);font-size:14px;line-height:1.45;margin-top:4px}
+.con-ph-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.con-ph-back{margin-top:-2px}
+@media (max-width:899px){.con-ph h1{font-size:22px}}
+
+.con-panel{background:var(--surface);border-radius:var(--r-card);padding:16px 18px;margin-bottom:16px}
+.con-panel>h2{margin:0;font-size:16px;font-weight:600;letter-spacing:-.012em}
+.con-panel-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+.con-panel-h h2{margin:0;font-size:16px;font-weight:600;letter-spacing:-.012em}
+.con-lead{color:var(--label-2);font-size:13.5px;line-height:1.45;margin:2px 0 12px}
+.con-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.con-cols{margin-bottom:16px}
+.con-cols>*{min-width:0}
+.con-cols>.con-panel{margin-bottom:0}
+@media (max-width:999px){.con-cols{grid-template-columns:minmax(0,1fr)}}
+
+.con-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.con-stat{background:var(--surface);border-radius:var(--r-card);padding:14px 16px;min-width:0}
+.con-stat-l{font-size:13px;color:var(--label-2);overflow-wrap:break-word}
+.con-stat-v{font-size:28px;font-weight:600;letter-spacing:-.026em;margin-top:4px}
+.con-stat-v.acc{color:var(--acc)}
+@media (max-width:699px){.con-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.con-stat-v{font-size:24px}}
+
+/* a row in a short list (training now, invite codes, proposals) */
+.con-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:var(--hair) solid var(--sep);min-width:0}
+.con-row:last-child{border-bottom:0}
+button.con-row{width:100%;text-align:start}
+@media (hover:hover){button.con-row:hover .con-row-t{color:var(--acc)}}
+.con-row-t{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
+.con-row-s{font-size:12.5px;color:var(--label-2);margin-top:2px;overflow-wrap:anywhere}
+
+/* key / value metadata */
+.con-dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:9px 20px;margin:0;font-size:14px}
+.con-dl dt{color:var(--label-2)}
+.con-dl dd{margin:0;overflow-wrap:anywhere}
+
+/* an action with what it does beside it: the account actions on a user's page */
+.con-action{display:flex;align-items:center;gap:16px;padding:14px 0;border-top:var(--hair) solid var(--sep)}
+.con-action:first-of-type{border-top:0;padding-top:4px}
+.con-action-t{font-weight:600;font-size:14.5px}
+.con-action-s{font-size:13px;color:var(--label-2);line-height:1.45;margin-top:2px}
+.con-action .btn{flex:none;width:auto;min-width:160px}
+@media (max-width:599px){.con-action{flex-direction:column;align-items:stretch;gap:10px}.con-action .btn{width:100%}}
+
+/* -------------------------------------------------------------- toolbar -- */
+.con-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.con-toolbar .searchf{flex:1 1 220px;max-width:380px}
+.con-toolbar .searchf .field{background:var(--surface)}
+.con-toolbar .chips{margin:0;flex-wrap:wrap}
+.con .chip{text-transform:none}
+.con-table .icn{font-size:17px;vertical-align:middle}
+.con-select{
+  min-height:36px;padding:7px 34px 7px 12px;border-radius:var(--r-sm);border:0;
+  background:var(--surface);color:var(--label);font-size:14px;appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--label-2) 50%),linear-gradient(135deg,var(--label-2) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat
+}
+[dir="rtl"] .con-select{padding:7px 12px 7px 34px;background-position:18px 50%,13px 50%}
+.con-count{font-size:13px;color:var(--label-2);margin:0 2px 8px}
+
+/* --------------------------------------------------------------- table -- */
+.con-tablewrap{background:var(--surface);border-radius:var(--r-card);overflow:hidden}
+.con-table{width:100%;border-collapse:collapse;font-size:14px}
+.con-table th{
+  text-align:start;font-weight:600;font-size:12.5px;color:var(--label-2);white-space:nowrap;
+  padding:10px 14px;border-bottom:var(--hair) solid var(--sep)
+}
+.con-table th.end,.con-table td.end{text-align:end}
+.con-sort{display:inline-flex;align-items:center;gap:5px;font-weight:600;color:inherit;padding:2px 0}
+.con-sort .icn{font-size:11px;opacity:.75}
+.con-table th[aria-sort] .con-sort{color:var(--label)}
+.con-table td{padding:11px 14px;border-bottom:var(--hair) solid var(--sep);vertical-align:middle}
+.con-table tbody tr:last-child td{border-bottom:0}
+.con-table tbody tr[role="link"]{cursor:pointer}
+@media (hover:hover){.con-table tbody tr[role="link"]:hover td{background:color-mix(in srgb,var(--surface) 55%,var(--surface-2))}}
+.con-table tbody tr:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.con-table tr.off td{opacity:.55}
+.con-cell-t{font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.con-cell-s{font-size:12.5px;color:var(--label-2);margin-top:2px;overflow-wrap:anywhere}
+.con-live{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
+.con-narrow-only{display:none}
+@media (max-width:699px){
+  .con-table thead{display:none}
+  .con-table,.con-table tbody,.con-table tr{display:block}
+  /* a row becomes a card: the primary cell, then the rest as one wrapping line of "label value" */
+  .con-table tr{display:flex;flex-wrap:wrap;column-gap:14px;row-gap:2px;padding:12px 14px;border-bottom:var(--hair) solid var(--sep)}
+  .con-table tbody tr:last-child{border-bottom:0}
+  .con-table td{display:inline-flex;gap:5px;padding:0;border:0;font-size:13px;text-align:start}
+  .con-table td:not(.primary)::before{content:attr(data-label);color:var(--label-2)}
+  .con-table td.primary{display:block;flex:1 0 100%;font-size:15px;padding-bottom:4px}
+  .con-table td.wide-only{display:none}
+  .con-narrow-only{display:revert}
+}
+
+/* -------------------------------------------------------------- states -- */
+.con-loading{color:var(--label-3);font-size:14px;padding:24px 4px}
+.con-empty{text-align:center;color:var(--label-2);padding:36px 20px;font-size:14px;line-height:1.45}
+.con-empty-ico{display:flex;justify-content:center;font-size:28px;color:var(--label-3);margin-bottom:10px}
+.con-empty-t{font-weight:600;color:var(--label);margin-bottom:4px;font-size:15px}
+.con-empty-a{margin-top:14px;display:flex;justify-content:center}
+.con-error{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;margin-bottom:16px;
+  border-radius:var(--r-card);background:color-mix(in srgb,var(--red) 12%,var(--surface));color:var(--label)
+}
+.con-error>.icn{color:var(--red);font-size:20px;flex:none}
+.con-error-t{font-weight:600;font-size:14.5px}
+.con-error-b{font-size:13px;color:var(--label-2);margin-top:2px}
+
+/* =============================================================================
+   Shared with views/AdminCoach.jsx (moved here from admin.css with their names kept, so
+   its markup did not have to change). Operator-facing: every card says what it is for in a
+   sentence and every state is a word, not a colour to decode.
+   ============================================================================= */
+.adm-intro{color:var(--label-2);font-size:14px;line-height:1.45;margin:-6px 0 16px}
+
+/* one sentence under a card heading that says what the card is for */
+.adm-lead{color:var(--label-2);font-size:13px;line-height:1.45;margin:2px 0 12px}
+
+/* status pill: a word and a colour, never a paragraph */
+.adm-pill{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+  font-size:12.5px;font-weight:600;letter-spacing:-.004em;line-height:1.5;white-space:nowrap;
+  background:var(--surface-2);color:var(--label-2)
+}
+.adm-pill::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.adm-pill.ok{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green)}
+.adm-pill.warn{background:color-mix(in srgb,var(--yellow) 18%,transparent);color:var(--yellow)}
+.adm-pill.bad{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
+.adm-pill.acc{background:var(--acc-soft);color:var(--acc)}
+
+/* the one-line "what state is this in" under the card title */
+.adm-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--label-2);margin:4px 0 14px;line-height:1.4}
+
+/* numbered setup steps: a <details> per step, so a finished step folds away */
+.adm-step{border-top:var(--hair) solid var(--sep);padding:2px 0}
+.adm-step:first-of-type{border-top:0}
+.adm-step>summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;min-height:50px;padding:6px 0;
+  -webkit-tap-highlight-color:transparent
+}
+.adm-step>summary::-webkit-details-marker{display:none}
+.adm-step>summary:active{opacity:.7}
+.adm-num{
+  width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:13px;font-weight:700;background:var(--surface-3);color:var(--label)
+}
+.adm-step.done .adm-num{background:var(--acc);color:var(--on-acc)}
+.adm-step.todo .adm-num{background:var(--surface-3);color:var(--label-2)}
+.adm-step-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.adm-step-t b{font-size:16px;font-weight:600;letter-spacing:-.012em;line-height:1.25}
+.adm-step-t span{font-size:13px;color:var(--label-2);line-height:1.3}
+.adm-step>summary .chev{color:var(--label-3);font-size:14px;transition:transform .18s ease;flex:none}
+.adm-step[open]>summary .chev{transform:rotate(90deg)}
+.adm-step-b{padding:2px 0 14px 38px}
+@media (max-width:380px){.adm-step-b{padding-left:0}}
+
+/* a dim explainer that reads like a sentence, not a footnote */
+.adm-hint{font-size:13px;color:var(--label-2);line-height:1.45;margin:6px 0 10px}
+.adm-hint code{font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+
+/* provider chips grouped under a small heading */
+.adm-group{margin:0 0 12px}
+.adm-group-t{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--label-3);margin:0 0 7px}
+.adm-chips{display:flex;flex-wrap:wrap;gap:8px}
+.adm-chips .chip{min-height:38px;display:inline-flex;align-items:center;gap:7px}
+.adm-chip-key{
+  font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:1px 6px;border-radius:999px;
+  background:var(--acc-soft);color:var(--acc)
+}
+.chip.on .adm-chip-key{background:rgba(0,0,0,.18);color:inherit}
+
+/* label + control pairs inside a step */
+.adm-field{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+.adm-field>label{font-size:13px;font-weight:600;color:var(--label-2)}
+/* Inside a card the app's default field colour is the card's own colour, so the box was
+   invisible and the placeholder floated in space. One shade up, and a size that is readable
+   without iOS zooming into it. */
+.adm-field .field{width:100%;background:var(--surface-2);font-size:16px;min-height:44px}
+.adm-select{
+  width:100%;min-height:44px;padding:10px 38px 10px 12px;border-radius:var(--r);border:0;
+  background:var(--surface-2);color:var(--label);font-size:15px;appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--label-2) 50%),linear-gradient(135deg,var(--label-2) 50%,transparent 50%);
+  background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat
+}
+.adm-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.adm-actions .btn{min-height:44px}
+
+/* inline result box under the Test button */
+.adm-result{
+  margin-top:10px;padding:10px 12px;border-radius:var(--r);font-size:13.5px;line-height:1.45;
+  background:var(--surface-2);color:var(--label)
+}
+.adm-result.ok{background:color-mix(in srgb,var(--green) 14%,transparent)}
+.adm-result.bad{background:color-mix(in srgb,var(--red) 14%,transparent)}
+.adm-result b{display:block;margin-bottom:2px}
+
+/* advanced / activity folds */
+.adm-fold{border-top:var(--hair) solid var(--sep);margin-top:4px}
+.adm-fold>summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:48px;padding:6px 0;font-size:15px;font-weight:600;letter-spacing:-.012em
+}
+.adm-fold>summary::-webkit-details-marker{display:none}
+.adm-fold>summary .chev{color:var(--label-3);font-size:14px;transition:transform .18s ease}
+.adm-fold[open]>summary .chev{transform:rotate(90deg)}
+.adm-fold-b{padding:0 0 12px}
+
+.adm-kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:var(--hair) solid var(--sep);font-size:14px}
+.adm-kv:last-child{border-bottom:0}
+.adm-kv .k{color:var(--label-2);flex:none}
+.adm-kv .v{text-align:right;min-width:0;overflow-wrap:anywhere}
+/* the two daily-limit numbers: a real field, not the browser's white default box */
+.adm-kv .v input{
+  width:84px;min-height:40px;padding:6px 10px;text-align:right;font-size:16px;font-weight:600;
+  border:0;border-radius:10px;background:var(--surface-2);color:var(--label);outline:none;
+  -moz-appearance:textfield;appearance:textfield
+}
+.adm-kv .v input::-webkit-outer-spin-button,.adm-kv .v input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.adm-kv .v input:focus{box-shadow:inset 0 0 0 2px var(--acc)}
+
+.adm-log{display:flex;flex-direction:column}
+.adm-log-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:var(--hair) solid var(--sep);font-size:13.5px}
+.adm-log-row:last-child{border-bottom:0}
+.adm-log-row .when{color:var(--label-3);font-size:12px;flex:none}
+
+/* users list rows with a copy affordance for invite codes */
+.adm-code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;letter-spacing:.08em;
+  background:var(--surface-2);padding:4px 9px;border-radius:8px;font-size:14px
+}
+.adm-iconbtn{width:44px;height:44px;border-radius:12px;font-size:17px}
+.adm-empty{color:var(--label-3);font-size:13.5px;padding:10px 2px}
+
+/* ---------- the Coach before setup: a pitch, not a form ---------- */
+.adm-hero{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 2px 2px}
+.adm-hero-av{
+  width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;
+  background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 55%,var(--teal)));
+  color:var(--on-acc);margin-bottom:8px;box-shadow:0 8px 24px -8px color-mix(in srgb,var(--acc) 55%,transparent)
+}
+.adm-hero h2{margin:0 0 4px;font-size:22px;letter-spacing:-.022em}
+.adm-hero p{margin:0 0 14px;font-size:14px;line-height:1.5;color:var(--label-2)}
+.adm-hero-feats{display:grid;gap:10px;margin-bottom:18px}
+.adm-hero-feats>div{display:flex;gap:11px;align-items:flex-start}
+.adm-hero-feats .icn{color:var(--acc);font-size:18px;flex:none;margin-top:2px}
+.adm-hero-feats span{font-size:13.5px;line-height:1.45;color:var(--label-2)}
+.adm-hero-feats b{color:var(--label);font-weight:600}
+.adm-hero .btn{width:100%}
+
+/* ---------- setup progress ---------- */
+.adm-progress{height:5px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:0 0 10px}
+.adm-progress i{display:block;height:100%;border-radius:99px;background:var(--acc);transition:width var(--med) var(--ease)}
+
+/* ---------- provider chips: clearly idle vs. clearly chosen ---------- */
+.adm-chips .chip{
+  background:var(--surface-2);border:1.5px solid transparent;color:var(--label);
+  font-weight:500;text-transform:none
+}
+.adm-chips .chip.on{background:var(--acc-soft);border-color:var(--acc);color:var(--acc);font-weight:600}
+.adm-chips .chip:active{transform:scale(.97)}
+
+/* a finished step's summary reads as a receipt, not a control */
+.adm-step.done>summary .adm-step-t span{color:var(--acc)}
+
+/* a field inside a panel: one shade up, or the box is the panel's own colour and disappears */
+.con-panel .input,.con-panel .field{background:var(--surface-2)}

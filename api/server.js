@@ -2450,10 +2450,10 @@ const routes = {
         ...(PASSWORD_LOGIN ? { password: hasPassword(u), email: u.email || null } : {})
       };
     });
-    json(res, 200, { users, invite_only: INVITE_ONLY, ...(PASSWORD_LOGIN ? { password_login: true } : {}), now: Date.now() });
+    json(res, 200, { users, invite_only: INVITE_ONLY, audit: AUDIT_ON, ...(PASSWORD_LOGIN ? { password_login: true } : {}), now: Date.now() });
   },
 
-  // Drill-down: full workout history + body-weight log for one user.
+  // Drill-down for one user: account metadata and counts, no training data.
   'GET /api/admin/user': async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const id = new URL(req.url, 'http://x').searchParams.get('id');
@@ -2469,11 +2469,18 @@ const routes = {
       },
       unit: S.unit || 'kg',
       lastSync: lastSyncOf(u, S),
-      routines: records(S.routines).map(r => ({ id: r.id, name: r.name, emoji: r.emoji, count: records(r.ex).length })),
-      bodyweight: records(S.bodyweight),
-      // records() already copied, so this reverse is ours: newest first for display. A workout's
-      // photos and videos are the owner's own: the admin view gets no refs to them.
-      workouts: records(S.workouts).reverse().map(({ media, ...w }) => w)
+      // How much there is, never what it is: the operator runs the box, the training and health
+      // data are the user's own (docs/dev/PROFESSIONAL_PLATFORM.md, decision 9). records() drops
+      // null and shapeless entries, so the counts are what a valid document holds.
+      counts: {
+        workouts: records(S.workouts).length,
+        bodyweight: records(S.bodyweight).length,
+        measurements: records(S.measurements).length,
+        routines: records(S.routines).length
+      },
+      // Kept, empty, for an older admin panel bundled in an APK that has not updated yet: it reads
+      // `.length` on these and would throw on a missing key. Nothing of the user's is in them.
+      workouts: [], bodyweight: [], routines: []
     });
   },
 

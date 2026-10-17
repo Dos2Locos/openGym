@@ -681,17 +681,17 @@ describe('AdminCoach — what the card refuses to show', () => {
       ],
     })
     await mount()
-    expect(host.textContent).toContain('just now')
-    expect(host.textContent).toContain('added 3 d ago')
+    expect(host.textContent).toContain('Last successnow')
+    expect(host.textContent).toContain('Added 3 days ago')
     const rows = [...host.querySelectorAll('.adm-log-row')].map(r => r.textContent)
-    expect(rows[0]).toContain('5 min ago')
-    expect(rows[1]).toContain('3 h ago')
+    expect(rows[0]).toContain('5 minutes ago')
+    expect(rows[1]).toContain('3 hours ago')
     expect(rows[1]).not.toContain(' s')    // ms: 0 must not print "0 s"
 
     mocks.routes['/api/admin/coach'] = status({ lastSuccess: null })
     act(() => { root.render(<AdminCoach key="again" />) })
     await settle()
-    expect(host.textContent).toContain('never')
+    expect(host.textContent).toContain('Last successNever')
   })
 
   it('names which KIND of credential is filed, not just that one is', async () => {
@@ -711,7 +711,7 @@ describe('AdminCoach — what the card refuses to show', () => {
     })
     await mount()
     expect(host.textContent).toContain('already in use by one profile')
-    expect(host.textContent).toContain('nobody spends somebody else\'s subscription')
+    expect(host.textContent).toContain('nobody spends somebody else’s subscription')
   })
 
   it('says when jobs do run as a separate unprivileged user', async () => {
@@ -786,7 +786,7 @@ describe('AdminCoach — readiness and the step count', () => {
   it('an undecryptable stored key gets its own state and its own fix, not "not connected"', async () => {
     mocks.routes['/api/admin/coach'] = status({ auth: { state: 'unreadable' } })
     await mount()
-    expect(host.textContent).toContain("can't be decrypted")
+    expect(host.textContent).toContain('can’t be decrypted')
     expect(host.textContent).toContain('secret')
     // …and the way out is offered, not just described.
     expect(btn('Add API key')).toBeTruthy()

@@ -25,7 +25,7 @@ function mintSession(uid) {
 const ADMIN = 'u_adm_1', VICTIM = 'u_vic_1';
 const asAdmin = { Cookie: `gymsid=${mintSession(ADMIN)}`, 'Content-Type': 'application/json' };
 
-async function startServer(t) {
+async function startServer(t, env = {}) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gym-admin-'));
   fs.writeFileSync(path.join(dataDir, 'secret'), SECRET, { mode: 0o600 });
   fs.writeFileSync(path.join(dataDir, 'db.json'), JSON.stringify({
@@ -36,7 +36,7 @@ async function startServer(t) {
   }));
   const child = spawn(process.execPath, ['server.js'], {
     cwd: API, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, PORT: '0', DATA_DIR: dataDir, ORIGIN: 'http://localhost:8080', RP_ID: 'localhost' }
+    env: { ...process.env, PORT: '0', DATA_DIR: dataDir, ORIGIN: 'http://localhost:8080', RP_ID: 'localhost', ...env }
   });
   const h = { api: '', log: '', dataDir };
   child.stdout.on('data', d => h.log += d);
@@ -79,34 +79,35 @@ test('GET /api/admin/user opens a profile whose stored state predates the entry 
     h.plant(doc);
     const r = await h.get(`/api/admin/user?id=${VICTIM}`);
     assert.equal(r.status, 200, `${what}: ${JSON.stringify(r.body)}`);
-    // Every list the sheet counts and walks comes back usable — the drill-down renders it
-    // without a guard of its own for anything but the workout entries.
-    for (const k of ['routines', 'bodyweight', 'workouts']) {
-      assert.ok(Array.isArray(r.body[k]), `${what}: ${k} is an array`);
-      assert.equal(r.body[k].some(x => !x || typeof x !== 'object' || Array.isArray(x)), false, `${what}: ${k} holds only entries`);
+    // Counts are numbers in every case, and count only what is an entry.
+    const valid = v => (Array.isArray(v) ? v.filter(x => x && typeof x === 'object' && !Array.isArray(x)).length : 0);
+    for (const k of ['workouts', 'bodyweight', 'routines', 'measurements']) {
+      assert.equal(r.body.counts[k], valid(doc[k]), `${what}: counts.${k}`);
     }
+    // An older admin panel still finds the lists it reads `.length` on — empty.
+    for (const k of ['routines', 'bodyweight', 'workouts']) assert.deepEqual(r.body[k], [], `${what}: ${k} is empty`);
   }
-  // The good entries are still there, and a routine's exercise count is a number in every case.
-  h.plant(DOCS['a null routine entry']);
-  let r = await h.get(`/api/admin/user?id=${VICTIM}`);
-  assert.deepEqual(r.body.routines, [{ id: 'r1', name: 'Full body', emoji: '💪', count: 1 }]);
-  assert.deepEqual(r.body.workouts.map(w => w.id), ['w1']);
-  assert.deepEqual(r.body.bodyweight, [okB]);
-  h.plant({ routines: [{ id: 'r2', name: 'Broken', ex: 'nope' }] });
-  r = await h.get(`/api/admin/user?id=${VICTIM}`);
-  assert.deepEqual(r.body.routines, [{ id: 'r2', name: 'Broken', count: 0 }]);   // an `ex` that is not a list counts as no exercises
   assert.equal(h.stackFrames(), 0, `stack traces in the log:\n${h.log}`);
 });
 
-test('GET /api/admin/user leaves a workout\'s photos and videos out', async t => {
+// The operator runs the instance; the training and health data are the user's own.
+test('GET /api/admin/user carries no training data, only metadata and counts', async t => {
   const h = await startServer(t);
   const ref = { kind: 'image', hash: 'a'.repeat(64), mime: 'image/webp', size: 10, width: 8, height: 6, at: 1 };
-  h.plant({ workouts: [{ ...okW, media: [ref] }], routines: [okR], bodyweight: [okB], unit: 'kg' });
+  h.plant({ workouts: [{ ...okW, media: [ref] }], routines: [okR], bodyweight: [okB], measurements: [{ d: '2026-10-01', waist: 80 }], unit: 'kg' });
   const r = await h.get(`/api/admin/user?id=${VICTIM}`);
   assert.equal(r.status, 200);
-  assert.deepEqual(r.body.workouts.map(w => w.id), ['w1']);
-  assert.equal('media' in r.body.workouts[0], false);
-  assert.equal(JSON.stringify(r.body).includes('a'.repeat(64)), false);
+  assert.deepEqual(r.body.counts, { workouts: 1, bodyweight: 1, measurements: 1, routines: 1 });
+  const body = JSON.stringify(r.body);
+  for (const leak of ['a'.repeat(64), okW.id, okR.name, okR.id]) assert.equal(body.includes(leak), false, `leaked ${leak}`);
+  assert.deepEqual(Object.keys(r.body).sort(), ['bodyweight', 'counts', 'lastSync', 'routines', 'unit', 'user', 'workouts']);
+});
+
+test('GET /api/admin/users says whether the activity log is on', async t => {
+  const on = await startServer(t);
+  assert.equal((await on.get('/api/admin/users')).body.audit, true);
+  const off = await startServer(t, { AUDIT_LOG: '0' });
+  assert.equal((await off.get('/api/admin/users')).body.audit, false);
 });
 
 test('the user list and the disable switch survive the same document', async t => {

@@ -2661,7 +2661,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <div class="ptab">
   <div class="prow rrow">
     <span class="r-code s2">200</span>
-    <span class="p-desc">All users.<span class="r-sig">{ users: <a href="#schema-AdminUserRow">AdminUserRow</a>[], invite_only: boolean, password_login: boolean, now: number }</span></span>
+    <span class="p-desc">All users.<span class="r-sig">{ users: <a href="#schema-AdminUserRow">AdminUserRow</a>[], invite_only: boolean, audit: boolean, password_login: boolean, now: number }</span></span>
   </div>
   <div class="prow rrow">
     <span class="r-code s4">401</span>
@@ -2683,7 +2683,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="ep-sum">One user in detail</span>
   </summary>
   <div class="ep-body">
-<p>Drill-down: full workout history (newest first) and body-weight log for one user. Admin only. Anything in <code>routines</code>, <code>bodyweight</code> or <code>workouts</code> that is not an object is left out, and a list that is not an array reads as empty: PUT /api/data drops those entries now, but a state file written before it did still has them and this route has to answer for it. A workout's <code>media</code> (its photos and videos) is left out: they are the owner's own.</p>
+<p>Drill-down for one user: account metadata and how many workouts, weigh-ins, measurements and routines they have stored. Admin only. The operator never gets the training or health data itself; that is the user's own. Entries that are not objects are not counted, and a list that is not an array counts as zero: PUT /api/data drops those entries now, but a state file written before it did still has them and this route has to answer for it. <code>workouts</code>, <code>bodyweight</code> and <code>routines</code> are always empty arrays, kept for admin panels in older app builds.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Admin only: a signed-in session whose user is an admin (<code>ADMIN_UIDS</code> or <code>admin:true</code>), as the session cookie or a Bearer token.</span></p>
 <p class="ep-h">Query parameters</p><div class="ptab">
   <div class="prow">
@@ -4683,39 +4683,44 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-desc"></span>
   </div>
   <div class="prow">
-    <span class="p-name">routines</span>
-    <span class="p-type">object[]</span>
-    <span class="p-desc"></span>
+    <span class="p-name">counts</span>
+    <span class="p-type">object</span>
+    <span class="p-desc">How much the user has stored, never what it is. Entries that are not objects are not counted.</span>
   </div>
   <div class="prow">
-    <span class="p-name">routines[].id</span>
-    <span class="p-type">string</span>
-    <span class="p-desc"></span>
-  </div>
-  <div class="prow">
-    <span class="p-name">routines[].name</span>
-    <span class="p-type">string</span>
-    <span class="p-desc"></span>
-  </div>
-  <div class="prow">
-    <span class="p-name">routines[].emoji</span>
-    <span class="p-type">string</span>
-    <span class="p-desc"></span>
-  </div>
-  <div class="prow">
-    <span class="p-name">routines[].count</span>
+    <span class="p-name">counts.workouts</span>
     <span class="p-type">integer</span>
-    <span class="p-desc">Number of exercises.</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">counts.bodyweight</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">counts.measurements</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">counts.routines</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">routines</span>
+    <span class="p-type">any[]</span>
+    <span class="p-desc">Always empty. Kept for admin panels in older app builds, which read its length.</span>
   </div>
   <div class="prow">
     <span class="p-name">bodyweight</span>
-    <span class="p-type"><a href="#schema-BodyweightEntry">BodyweightEntry</a>[]</span>
-    <span class="p-desc"></span>
+    <span class="p-type">any[]</span>
+    <span class="p-desc">Always empty. Kept for admin panels in older app builds, which read its length.</span>
   </div>
   <div class="prow">
     <span class="p-name">workouts</span>
-    <span class="p-type"><a href="#schema-Workout">Workout</a>[]</span>
-    <span class="p-desc">Full history, newest first.</span>
+    <span class="p-type">any[]</span>
+    <span class="p-desc">Always empty. Kept for admin panels in older app builds, which read its length.</span>
   </div>
 </div>
   </div>

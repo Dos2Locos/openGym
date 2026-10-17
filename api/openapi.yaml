@@ -2229,6 +2229,7 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/AdminUserRow' }
                   invite_only: { type: boolean }
+                  audit: { type: boolean, description: Whether the activity log is on (AUDIT_LOG). }
                   password_login: { type: boolean, description: Present (true) with PASSWORD_LOGIN=1. }
                   now:
                     type: number
@@ -2242,12 +2243,13 @@ paths:
       operationId: adminUser
       summary: 'Admin: one user in detail'
       description: >-
-        Drill-down: full workout history (newest first) and body-weight log for one
-        user. Admin only. Anything in `routines`, `bodyweight` or `workouts` that is not
-        an object is left out, and a list that is not an array reads as empty: PUT
+        Drill-down for one user: account metadata and how many workouts, weigh-ins,
+        measurements and routines they have stored. Admin only. The operator never gets
+        the training or health data itself; that is the user's own. Entries that are not
+        objects are not counted, and a list that is not an array counts as zero: PUT
         /api/data drops those entries now, but a state file written before it did still
-        has them and this route has to answer for it. A workout's `media` (its photos and
-        videos) is left out: they are the owner's own.
+        has them and this route has to answer for it. `workouts`, `bodyweight` and
+        `routines` are always empty arrays, kept for admin panels in older app builds.
       parameters:
         - name: id
           in: query
@@ -3909,22 +3911,31 @@ components:
               description: PASSWORD_LOGIN instances only. Expiry (ms) of an unused reset code.
         unit: { type: string, enum: [kg, lb] }
         lastSync: { oneOf: [{ type: number }, { type: 'null' }] }
+        counts:
+          type: object
+          description: >-
+            How much the user has stored, never what it is. Entries that are not
+            objects are not counted.
+          properties:
+            workouts: { type: integer }
+            bodyweight: { type: integer }
+            measurements: { type: integer }
+            routines: { type: integer }
         routines:
           type: array
-          items:
-            type: object
-            properties:
-              id: { type: string }
-              name: { type: string }
-              emoji: { type: string }
-              count: { type: integer, description: Number of exercises. }
+          maxItems: 0
+          deprecated: true
+          description: Always empty. Kept for admin panels in older app builds, which read its length.
         bodyweight:
           type: array
-          items: { $ref: '#/components/schemas/BodyweightEntry' }
+          maxItems: 0
+          deprecated: true
+          description: Always empty. Kept for admin panels in older app builds, which read its length.
         workouts:
           type: array
-          description: Full history, newest first.
-          items: { $ref: '#/components/schemas/Workout' }
+          maxItems: 0
+          deprecated: true
+          description: Always empty. Kept for admin panels in older app builds, which read its length.
 
     InstanceEquipment:
       type: object
